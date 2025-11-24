@@ -7,5 +7,10 @@
   "devDependencies": {
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@openrouter/ai-sdk-provider": "^1.2.5",
+    "ai": "^5.0.101",
+    "axios": "^1.13.2"
   }
 }
