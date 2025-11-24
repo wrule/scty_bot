@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { generateText } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 

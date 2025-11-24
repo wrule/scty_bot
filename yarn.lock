@@ -159,7 +159,7 @@
 
 "@openrouter/ai-sdk-provider@^1.2.5":
   version "1.2.5"
-  resolved "https://registry.yarnpkg.com/@openrouter/ai-sdk-provider/-/ai-sdk-provider-1.2.5.tgz#b0995973518254bfdd644dd299909c8444ce8e8e"
+  resolved "https://registry.npmjs.org/@openrouter/ai-sdk-provider/-/ai-sdk-provider-1.2.5.tgz"
   integrity sha512-NrvJFPvdEUo6DYUQIVWPGfhafuZ2PAIX7+CUMKGknv8TcTNVo0TyP1y5SU7Bgjf/Wup9/74UFKUB07icOhVZjQ==
   dependencies:
     "@openrouter/sdk" "^0.1.8"
@@ -183,7 +183,7 @@
 
 "@types/node@22":
   version "22.19.1"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-22.19.1.tgz#1188f1ddc9f46b4cc3aec76749050b4e1f459b7b"
+  resolved "https://registry.npmjs.org/@types/node/-/node-22.19.1.tgz"
   integrity sha512-LCCV0HdSZZZb34qifBsyWlUmok6W7ouER+oQIGBScS8EsZsQbrtFTUrDX4hOl+CS6p7cnNC4td+qrSVGSCTUfQ==
   dependencies:
     undici-types "~6.21.0"
@@ -236,6 +236,11 @@ delayed-stream@~1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/delayed-stream/-/delayed-stream-1.0.0.tgz"
   integrity sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==
+
+dotenv@^17.2.3:
+  version "17.2.3"
+  resolved "https://registry.npmjs.org/dotenv/-/dotenv-17.2.3.tgz"
+  integrity sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==
 
 dunder-proto@^1.0.1:
   version "1.0.1"
@@ -440,7 +445,7 @@ typescript@^5.9.3:
 
 undici-types@~6.21.0:
   version "6.21.0"
-  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-6.21.0.tgz#691d00af3909be93a7faa13be61b3a5b50ef12cb"
+  resolved "https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz"
   integrity sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==
 
 "zod@^3.25.0 || ^4.0.0":
