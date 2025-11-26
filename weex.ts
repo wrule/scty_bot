@@ -749,6 +749,37 @@ export type GetUserSettingsResponse = {
 };
 
 /**
+ * 保证金模式（数字类型，用于修改杠杆接口）
+ */
+export type MarginModeNumber = 1 | 3;  // 1: 全仓, 3: 逐仓
+
+/**
+ * 修改杠杆请求参数
+ */
+export interface ChangeLeverageParams {
+  /** 交易对（必填） */
+  symbol: string;
+  /** 保证金模式（必填）：1-全仓, 3-逐仓 */
+  marginMode: MarginModeNumber;
+  /** 多头杠杆（必填）。全仓模式下会同时应用到空头 */
+  longLeverage: string;
+  /** 空头杠杆（可选）。逐仓模式下可以与多头不同，全仓模式下会被忽略 */
+  shortLeverage?: string;
+}
+
+/**
+ * 修改杠杆响应
+ */
+export interface ChangeLeverageResponse {
+  /** 响应消息 */
+  msg: string;
+  /** 请求时间戳 */
+  requestTime: number;
+  /** 响应代码 */
+  code: string;
+}
+
+/**
  * 账户类型
  */
 export type AccountType = 'SPOT' | 'FUND';
@@ -1412,6 +1443,53 @@ export class WeexApiClient {
       if (axios.isAxiosError(error)) {
         throw new Error(
           `获取用户设置失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 修改杠杆
+   * POST /capi/v2/account/leverage
+   * Weight(IP): 10, Weight(UID): 20
+   * 需要权限：合约交易权限
+   * @param params - 修改杠杆参数
+   * @returns 修改杠杆响应
+   */
+  async changeLeverage(params: ChangeLeverageParams): Promise<ChangeLeverageResponse> {
+    const requestPath = '/capi/v2/account/leverage';
+
+    // 构建请求体
+    const bodyObj: any = {
+      symbol: params.symbol,
+      marginMode: params.marginMode,
+      longLeverage: params.longLeverage,
+    };
+
+    // 全仓模式下，shortLeverage 使用 longLeverage 的值（或者不传）
+    // 逐仓模式下，如果提供了 shortLeverage 则使用，否则也使用 longLeverage
+    if (params.marginMode === 3 && params.shortLeverage) {
+      // 逐仓模式，使用提供的 shortLeverage
+      bodyObj.shortLeverage = params.shortLeverage;
+    } else {
+      // 全仓模式或未提供 shortLeverage，使用 longLeverage
+      bodyObj.shortLeverage = params.longLeverage;
+    }
+
+    const body = JSON.stringify(bodyObj);
+
+    try {
+      const response = await this.sendRequestPost<ChangeLeverageResponse>(
+        requestPath,
+        '',
+        body
+      );
+      return response;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `修改杠杆失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
         );
       }
       throw error;
