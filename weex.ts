@@ -414,7 +414,7 @@ export class WeexApiClient {
    * @param timestamp - Current timestamp in milliseconds
    * @param method - HTTP method (GET)
    * @param requestPath - API endpoint path
-   * @param queryString - Query string
+   * @param queryString - Query string (without '?')
    * @returns Signature string
    */
   private generateSignatureGet(
@@ -423,7 +423,9 @@ export class WeexApiClient {
     requestPath: string,
     queryString: string
   ): string {
-    const message = timestamp + method.toUpperCase() + requestPath + queryString;
+    // 如果有查询参数，需要在签名中加上 '?'
+    const queryPart = queryString ? '?' + queryString : '';
+    const message = timestamp + method.toUpperCase() + requestPath + queryPart;
     return this.generateHmacSha256Signature(message);
   }
 
@@ -494,7 +496,7 @@ export class WeexApiClient {
       queryString
     );
 
-    const url = this.baseUrl + requestPath + queryString;
+    const url = this.baseUrl + requestPath + (queryString ? '?' + queryString : '');
 
     try {
       const response: AxiosResponse<T> = await axios.get(url, {
@@ -652,6 +654,34 @@ export class WeexApiClient {
       if (axios.isAxiosError(error)) {
         throw new Error(
           `获取账户列表失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 获取单个账户信息（私有接口，需要签名）
+   * GET /capi/v2/account/account
+   * Weight(IP): 1, Weight(UID): 1
+   * 需要权限：合约交易读权限
+   * @param coinId - 币种 ID（必填）
+   * @returns 单个账户信息
+   */
+  async getAccount(coinId: number): Promise<AccountListResponse> {
+    const requestPath = '/capi/v2/account/account';
+    const queryString = `coinId=${coinId}`;
+
+    try {
+      const response = await this.sendRequestGet<AccountListResponse>(
+        requestPath,
+        queryString
+      );
+      return response;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `获取账户信息失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
         );
       }
       throw error;
