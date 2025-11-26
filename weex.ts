@@ -60,6 +60,60 @@ export interface ContractInfo {
 }
 
 /**
+ * K线周期类型
+ */
+export type CandlestickGranularity = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '12h' | '1d' | '1w';
+
+/**
+ * 价格类型
+ */
+export type PriceType = 'LAST' | 'MARK' | 'INDEX';
+
+/**
+ * K线数据（原始数组格式）
+ * [时间, 开盘价, 最高价, 最低价, 收盘价, 交易量, 成交额]
+ */
+export type CandlestickRaw = [string, string, string, string, string, string, string];
+
+/**
+ * K线数据（对象格式，便于使用）
+ */
+export interface Candlestick {
+  /** K线时间（毫秒时间戳） */
+  time: number;
+  /** 开盘价 */
+  open: string;
+  /** 最高价 */
+  high: string;
+  /** 最低价 */
+  low: string;
+  /** 收盘价 */
+  close: string;
+  /** 交易量 */
+  volume: string;
+  /** 成交额 */
+  turnover: string;
+}
+
+/**
+ * 获取K线数据的请求参数
+ */
+export interface GetCandlesParams {
+  /** 交易对（必填） */
+  symbol: string;
+  /** K线周期（必填） */
+  granularity: CandlestickGranularity;
+  /** 返回数量限制（默认：100） */
+  limit?: number;
+  /** 价格类型（默认：LAST） */
+  priceType?: PriceType;
+  /** 开始时间（毫秒时间戳） */
+  startTime?: number;
+  /** 结束时间（毫秒时间戳） */
+  endTime?: number;
+}
+
+/**
  * Weex OpenAPI Client
  * Based on the official API documentation
  */
@@ -276,6 +330,68 @@ export class WeexApiClient {
       }
       throw error;
     }
+  }
+
+  /**
+   * 获取K线数据（公共接口，无需签名）
+   * GET /capi/v2/market/candles
+   * Weight(IP): 1
+   * @param params - 请求参数
+   * @returns K线数据数组（原始格式）
+   */
+  async getCandles(params: GetCandlesParams): Promise<CandlestickRaw[]> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('symbol', params.symbol);
+    queryParams.append('granularity', params.granularity);
+
+    if (params.limit !== undefined) {
+      queryParams.append('limit', params.limit.toString());
+    }
+
+    if (params.priceType) {
+      queryParams.append('priceType', params.priceType);
+    }
+
+    if (params.startTime !== undefined) {
+      queryParams.append('startTime', params.startTime.toString());
+    }
+
+    if (params.endTime !== undefined) {
+      queryParams.append('endTime', params.endTime.toString());
+    }
+
+    const url = `${this.baseUrl}/capi/v2/market/candles?${queryParams.toString()}`;
+
+    try {
+      const response: AxiosResponse<CandlestickRaw[]> = await axios.get(url);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `获取K线数据失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 获取K线数据（对象格式，便于使用）
+   * @param params - 请求参数
+   * @returns K线数据数组（对象格式）
+   */
+  async getCandlesFormatted(params: GetCandlesParams): Promise<Candlestick[]> {
+    const rawData = await this.getCandles(params);
+
+    return rawData.map(candle => ({
+      time: parseInt(candle[0]),
+      open: candle[1],
+      high: candle[2],
+      low: candle[3],
+      close: candle[4],
+      volume: candle[5],
+      turnover: candle[6],
+    }));
   }
 }
 
