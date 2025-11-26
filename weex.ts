@@ -941,6 +941,33 @@ export interface ChangeHoldModelResponse {
 }
 
 /**
+ * 调整持仓保证金请求参数
+ */
+export interface AdjustMarginParams {
+  /** 抵押品 ID（必填） */
+  coinId: number;
+  /** 逐仓持仓 ID（必填） */
+  isolatedPositionId: number;
+  /** 抵押品数量（必填）
+   * 正数表示增加保证金
+   * 负数表示减少保证金
+   */
+  collateralAmount: string;
+}
+
+/**
+ * 调整持仓保证金响应
+ */
+export interface AdjustMarginResponse {
+  /** 响应消息 */
+  msg: string;
+  /** 请求时间戳 */
+  requestTime: number;
+  /** 响应代码 */
+  code: string;
+}
+
+/**
  * 账户类型
  */
 export type AccountType = 'SPOT' | 'FUND';
@@ -1814,6 +1841,47 @@ export class WeexApiClient {
       if (axios.isAxiosError(error)) {
         throw new Error(
           `修改账户模式失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 调整持仓保证金（私有接口，需要签名）
+   * POST /capi/v2/account/adjustMargin
+   * Weight(IP): 15, Weight(UID): 30
+   * 需要权限：合约交易权限
+   *
+   * 注意：
+   * - 只适用于逐仓模式的持仓
+   * - 正数表示增加保证金，负数表示减少保证金
+   * - 减少保证金时不能导致强平
+   *
+   * @param params - 调整保证金参数
+   * @returns 调整响应
+   */
+  async adjustMargin(params: AdjustMarginParams): Promise<AdjustMarginResponse> {
+    const requestPath = '/capi/v2/account/adjustMargin';
+
+    // 构建请求体
+    const bodyObj = {
+      coinId: params.coinId,
+      isolatedPositionId: params.isolatedPositionId,
+      collateralAmount: params.collateralAmount,
+    };
+
+    try {
+      const response = await this.sendRequestPost<AdjustMarginResponse>(
+        requestPath,
+        bodyObj,
+        ''
+      );
+      return response;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `调整持仓保证金失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
         );
       }
       throw error;

@@ -2983,14 +2983,209 @@ async function testChangeHoldModel() {
 }
 
 /**
+ * 测试调整持仓保证金
+ */
+async function testAdjustMargin() {
+  console.log('\n=== 测试调整持仓保证金 ===\n');
+
+  const apiKey = process.env.WEEX_API_KEY || '';
+  const secretKey = process.env.WEEX_SECRET_KEY || '';
+  const passphrase = process.env.WEEX_PASSPHRASE || '';
+
+  if (!apiKey || !secretKey || !passphrase) {
+    console.error('❌ 请在 .env 文件中配置 API 密钥');
+    return;
+  }
+
+  // 合约 API 客户端
+  const client = new WeexApiClient(
+    apiKey,
+    secretKey,
+    passphrase,
+    'https://pro-openapi.weex.tech'
+  );
+
+  try {
+    // 步骤 1: 查询当前持仓
+    console.log('📊 步骤 1: 查询当前持仓');
+    console.log('-----------------------------------\n');
+
+    const positions = await client.getSinglePosition({
+      symbol: 'cmt_btcusdt'
+    });
+
+    // 检查是否有持仓
+    if (!positions || positions.length === 0) {
+      console.log('⚠️  当前没有持仓，无法调整保证金');
+      console.log('提示: 需要先开仓才能调整保证金');
+      console.log('');
+      console.log('💡 如何测试此接口:');
+      console.log('1. 先切换到逐仓模式');
+      console.log('2. 开一个小仓位（如 0.001 BTC）');
+      console.log('3. 然后再测试调整保证金');
+      return;
+    }
+
+    const position = positions[0];
+
+    console.log('当前持仓信息:');
+    console.log('  持仓 ID:', position.id);
+    console.log('  交易对:', position.symbol);
+    console.log('  持仓方向:', position.side);
+    console.log('  持仓数量:', position.size);
+    console.log('  保证金模式:', position.margin_mode);
+    console.log('  逐仓保证金:', position.isolated_margin);
+    console.log('  未实现盈亏:', position.unrealizePnl);
+    console.log('-----------------------------------\n');
+
+    // 检查是否是逐仓模式
+    if (position.margin_mode !== 'ISOLATED') {
+      console.log('⚠️  当前持仓不是逐仓模式，无法调整保证金');
+      console.log('提示: 只有逐仓模式的持仓才能调整保证金');
+      console.log('');
+      console.log('💡 如何切换到逐仓模式:');
+      console.log('1. 先平掉所有持仓');
+      console.log('2. 调用 changeHoldModel 切换到逐仓模式');
+      console.log('3. 然后再开仓');
+      return;
+    }
+
+    // 检查持仓数量
+    if (parseFloat(position.size) === 0) {
+      console.log('⚠️  持仓数量为 0，无法调整保证金');
+      return;
+    }
+
+    // 测试 1: 增加保证金
+    console.log('📊 测试 1: 增加保证金');
+    console.log('-----------------------------------\n');
+
+    console.log('⚙️  调整参数:');
+    console.log('  币种 ID: 2 (USDT)');
+    console.log('  持仓 ID:', position.id);
+    console.log('  调整数量: +10 USDT (增加保证金)');
+    console.log('');
+
+    const result1 = await client.adjustMargin({
+      coinId: 2,  // USDT
+      isolatedPositionId: position.id,
+      collateralAmount: '10'  // 增加 10 USDT
+    });
+
+    console.log('✅ 调整成功！');
+    console.log('响应代码:', result1.code);
+    console.log('响应消息:', result1.msg);
+    console.log('请求时间:', new Date(result1.requestTime).toLocaleString('zh-CN', {
+      timeZone: 'Asia/Shanghai'
+    }));
+    console.log('-----------------------------------\n');
+
+    // 等待一下
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // 查询调整后的持仓
+    const positionAfter1 = await client.getSinglePosition({
+      symbol: 'cmt_btcusdt'
+    });
+
+    console.log('📈 调整后的持仓信息:');
+    console.log('  逐仓保证金:', positionAfter1[0].isolated_margin);
+    console.log('  保证金变化:', `+${(parseFloat(positionAfter1[0].isolated_margin) - parseFloat(position.isolated_margin)).toFixed(2)} USDT`);
+    console.log('-----------------------------------\n');
+
+    // 等待一下
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // 测试 2: 减少保证金
+    console.log('📊 测试 2: 减少保证金');
+    console.log('-----------------------------------\n');
+
+    console.log('⚙️  调整参数:');
+    console.log('  币种 ID: 2 (USDT)');
+    console.log('  持仓 ID:', position.id);
+    console.log('  调整数量: -5 USDT (减少保证金)');
+    console.log('');
+
+    const result2 = await client.adjustMargin({
+      coinId: 2,  // USDT
+      isolatedPositionId: position.id,
+      collateralAmount: '-5'  // 减少 5 USDT
+    });
+
+    console.log('✅ 调整成功！');
+    console.log('响应代码:', result2.code);
+    console.log('响应消息:', result2.msg);
+    console.log('请求时间:', new Date(result2.requestTime).toLocaleString('zh-CN', {
+      timeZone: 'Asia/Shanghai'
+    }));
+    console.log('-----------------------------------\n');
+
+    // 查询最终持仓
+    const positionAfter2 = await client.getSinglePosition({
+      symbol: 'cmt_btcusdt'
+    });
+
+    console.log('📉 最终持仓信息:');
+    console.log('  逐仓保证金:', positionAfter2[0].isolated_margin);
+    console.log('  保证金变化:', `${(parseFloat(positionAfter2[0].isolated_margin) - parseFloat(positionAfter1[0].isolated_margin)).toFixed(2)} USDT`);
+    console.log('-----------------------------------\n');
+
+    console.log('💡 使用提示:');
+    console.log('-----------------------------------');
+    console.log('1. 适用范围:');
+    console.log('   - 只适用于逐仓模式的持仓');
+    console.log('   - 全仓模式无法调整保证金');
+    console.log('');
+    console.log('2. 调整方向:');
+    console.log('   - 正数: 增加保证金（从账户余额转入）');
+    console.log('   - 负数: 减少保证金（转回账户余额）');
+    console.log('');
+    console.log('3. 限制条件:');
+    console.log('   - 减少保证金时不能导致强平');
+    console.log('   - 需要保持足够的维持保证金率');
+    console.log('   - 账户余额必须足够（增加时）');
+    console.log('');
+    console.log('4. AI 交易应用:');
+    console.log('   - 动态调整杠杆倍数');
+    console.log('   - 根据市场波动调整风险');
+    console.log('   - 价格有利时减少保证金提高收益率');
+    console.log('   - 价格不利时增加保证金避免强平');
+    console.log('');
+    console.log('5. 风险管理示例:');
+    console.log('   - 未实现盈亏 > 0: 可以减少保证金');
+    console.log('   - 未实现盈亏 < 0: 应该增加保证金');
+    console.log('   - 接近强平价: 必须增加保证金');
+    console.log('-----------------------------------');
+
+    return { result1, result2, positionAfter2 };
+  } catch (error) {
+    console.error('❌ 调整持仓保证金失败:', error);
+
+    if (error instanceof Error) {
+      if (error.message.includes('40013')) {
+        console.log('\n⚠️  可能的原因:');
+        console.log('   - 当前没有逐仓持仓');
+        console.log('   - 持仓 ID 不正确');
+      } else if (error.message.includes('insufficient')) {
+        console.log('\n⚠️  可能的原因:');
+        console.log('   - 账户余额不足（增加保证金时）');
+        console.log('   - 减少保证金会导致强平');
+      }
+    }
+
+    throw error;
+  }
+}
+
+/**
  * 主测试函数
  */
 async function main() {
   try {
     console.log('🚀 开始测试 Weex API 客户端\n');
 
-    // 测试修改用户账户模式
-    await testChangeHoldModel();
+    // 测试调整持仓保证金
+    await testAdjustMargin();
 
     console.log('\n✅ 测试完成！');
   } catch (error) {
