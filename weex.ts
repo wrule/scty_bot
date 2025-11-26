@@ -645,6 +645,82 @@ export interface GetFillsResponse {
 }
 
 /**
+ * 单个仓位信息
+ */
+export interface SinglePosition {
+  /** 仓位 ID */
+  id: number;
+  /** 关联账户 ID */
+  account_id: number;
+  /** 关联抵押品币种 ID */
+  coin_id: number;
+  /** 关联合约 ID */
+  contract_id: number;
+  /** 交易对 */
+  symbol?: string;
+  /** 仓位方向（LONG: 多头, SHORT: 空头） */
+  side: string;
+  /** 保证金模式（SHARED: 全仓, ISOLATED: 逐仓） */
+  margin_mode: string;
+  /** 分离模式（COMBINED: 合并, SEPARATED: 分离） */
+  separated_mode: string;
+  /** 分离仓位的开仓订单 ID */
+  separated_open_order_id: number;
+  /** 仓位杠杆 */
+  leverage: string;
+  /** 当前仓位大小 */
+  size: string;
+  /** 开仓初始价值 */
+  open_value: string;
+  /** 开仓手续费 */
+  open_fee: string;
+  /** 资金费用 */
+  funding_fee: string;
+  /** 逐仓保证金 */
+  isolated_margin: string;
+  /** 是否启用逐仓保证金自动追加（仅逐仓模式） */
+  is_auto_append_isolated_margin: boolean;
+  /** 累计开仓数量 */
+  cum_open_size: string;
+  /** 累计开仓价值 */
+  cum_open_value: string;
+  /** 累计开仓手续费 */
+  cum_open_fee: string;
+  /** 累计平仓数量 */
+  cum_close_size: string;
+  /** 累计平仓价值 */
+  cum_close_value: string;
+  /** 累计平仓手续费 */
+  cum_close_fee: string;
+  /** 累计已结算资金费用 */
+  cum_funding_fee: string;
+  /** 累计强平手续费 */
+  cum_liquidate_fee: string;
+  /** 创建时的撮合引擎序列 ID */
+  created_match_sequence_id: number;
+  /** 最后更新时的撮合引擎序列 ID */
+  updated_match_sequence_id: number;
+  /** 创建时间 */
+  created_time: number;
+  /** 更新时间 */
+  updated_time: number;
+  /** 合约面值 */
+  contractVal: string;
+  /** 未实现盈亏 */
+  unrealizePnl: string;
+  /** 预估强平价格（0 表示低风险，无强平价格） */
+  liquidatePrice: string;
+}
+
+/**
+ * 获取单个仓位请求参数
+ */
+export interface GetSinglePositionParams {
+  /** 交易对（必填） */
+  symbol: string;
+}
+
+/**
  * 账户类型
  */
 export type AccountType = 'SPOT' | 'FUND';
@@ -1246,6 +1322,36 @@ export class WeexApiClient {
       if (axios.isAxiosError(error)) {
         throw new Error(
           `获取成交记录失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 获取单个仓位信息
+   * GET /capi/v2/account/position/singlePosition
+   * Weight(IP): 2, Weight(UID): 3
+   * 需要权限：合约交易权限
+   * @param params - 查询参数
+   * @returns 单个仓位信息数组
+   */
+  async getSinglePosition(params: GetSinglePositionParams): Promise<SinglePosition[]> {
+    const requestPath = '/capi/v2/account/position/singlePosition';
+
+    // 构建查询字符串
+    const queryString = `symbol=${encodeURIComponent(params.symbol)}`;
+
+    try {
+      const response = await this.sendRequestGet<SinglePosition[]>(
+        requestPath,
+        queryString
+      );
+      return response;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `获取单个仓位失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
         );
       }
       throw error;

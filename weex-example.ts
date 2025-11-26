@@ -1543,14 +1543,123 @@ async function testGetFills() {
 }
 
 /**
+ * 测试获取单个仓位信息
+ */
+async function testGetSinglePosition() {
+  console.log('\n=== 测试获取单个仓位信息 ===\n');
+
+  const apiKey = process.env.WEEX_API_KEY || '';
+  const secretKey = process.env.WEEX_SECRET_KEY || '';
+  const passphrase = process.env.WEEX_PASSPHRASE || '';
+
+  if (!apiKey || !secretKey || !passphrase) {
+    console.error('❌ 请在 .env 文件中配置 API 密钥');
+    return;
+  }
+
+  // 合约 API 客户端
+  const client = new WeexApiClient(
+    apiKey,
+    secretKey,
+    passphrase,
+    'https://pro-openapi.weex.tech'
+  );
+
+  try {
+    // 测试多个交易对
+    const symbols = ['cmt_btcusdt', 'cmt_ethusdt', 'cmt_solusdt'];
+
+    for (const symbol of symbols) {
+      console.log(`📊 查询 ${symbol.toUpperCase()} 仓位信息`);
+      console.log('-----------------------------------\n');
+
+      const positions = await client.getSinglePosition({ symbol });
+
+      console.log('原始响应:', JSON.stringify(positions, null, 2));
+      console.log('');
+
+      if (Array.isArray(positions) && positions.length > 0) {
+        positions.forEach((position, index) => {
+          console.log(`仓位 ${index + 1}:`);
+          console.log('-----------------------------------');
+          console.log('仓位 ID:', position.id);
+          console.log('账户 ID:', position.account_id);
+          console.log('合约 ID:', position.contract_id);
+          console.log('币种 ID:', position.coin_id);
+          if (position.symbol) {
+            console.log('交易对:', position.symbol);
+          }
+          console.log('仓位方向:', position.side === 'LONG' ? '多头 🟢' : '空头 🔴');
+          console.log('保证金模式:', position.margin_mode === 'SHARED' ? '全仓' : '逐仓');
+          console.log('分离模式:', position.separated_mode === 'COMBINED' ? '合并' : '分离');
+          console.log('杠杆倍数:', position.leverage + 'x');
+          console.log('');
+
+          console.log('📈 仓位数据:');
+          console.log('  当前仓位大小:', position.size);
+          console.log('  开仓价值:', position.open_value);
+          console.log('  开仓手续费:', position.open_fee);
+          console.log('  资金费用:', position.funding_fee);
+          console.log('  逐仓保证金:', position.isolated_margin);
+          console.log('  自动追加保证金:', position.is_auto_append_isolated_margin ? '是' : '否');
+          console.log('');
+
+          console.log('📊 累计数据:');
+          console.log('  累计开仓数量:', position.cum_open_size);
+          console.log('  累计开仓价值:', position.cum_open_value);
+          console.log('  累计开仓手续费:', position.cum_open_fee);
+          console.log('  累计平仓数量:', position.cum_close_size);
+          console.log('  累计平仓价值:', position.cum_close_value);
+          console.log('  累计平仓手续费:', position.cum_close_fee);
+          console.log('  累计资金费用:', position.cum_funding_fee);
+          console.log('  累计强平手续费:', position.cum_liquidate_fee);
+          console.log('');
+
+          console.log('💰 盈亏信息:');
+          console.log('  未实现盈亏:', position.unrealizePnl);
+          console.log('  预估强平价格:', position.liquidatePrice === '0' ? '低风险（无强平价格）' : position.liquidatePrice);
+          console.log('  合约面值:', position.contractVal);
+          console.log('');
+
+          console.log('⏰ 时间信息:');
+          console.log('  创建时间:', new Date(position.created_time).toLocaleString('zh-CN', {
+            timeZone: 'Asia/Shanghai'
+          }));
+          console.log('  更新时间:', new Date(position.updated_time).toLocaleString('zh-CN', {
+            timeZone: 'Asia/Shanghai'
+          }));
+          console.log('-----------------------------------\n');
+        });
+      } else {
+        console.log('⚠️  暂无仓位信息');
+        console.log('');
+      }
+
+      // 添加延迟避免速率限制
+      if (symbol !== symbols[symbols.length - 1]) {
+        console.log('⏳ 等待 1 秒...\n');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    console.log('✅ 所有仓位查询完成！');
+
+    return;
+  } catch (error) {
+    console.error('❌ 获取仓位信息失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 主测试函数
  */
 async function main() {
   try {
     console.log('🚀 开始测试 Weex API 客户端\n');
 
-    // 测试获取成交记录
-    await testGetFills();
+    // 测试获取单个仓位信息
+    await testGetSinglePosition();
 
     console.log('\n✅ 测试完成！');
   } catch (error) {
