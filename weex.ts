@@ -2,6 +2,18 @@ import axios, { AxiosResponse } from 'axios';
 import CryptoJS from 'crypto-js';
 
 /**
+ * 服务器时间响应接口
+ */
+export interface ServerTimeResponse {
+  /** Unix 时间戳（UTC 时区），以秒为单位的十进制数 */
+  epoch: string;
+  /** ISO 8601 标准时间格式 */
+  iso: string;
+  /** 服务器时间戳（毫秒） */
+  timestamp: number;
+}
+
+/**
  * Weex OpenAPI Client
  * Based on the official API documentation
  */
@@ -16,7 +28,7 @@ export class WeexApiClient {
    * @param apiKey - Your API Key
    * @param secretKey - Your Secret Key
    * @param accessPassphrase - Your Access Passphrase
-   * @param baseUrl - API base URL (e.g., https://api.weex.com)
+   * @param baseUrl - API base URL (e.g., https://api-contract.weex.com)
    */
   constructor(
     apiKey: string,
@@ -169,6 +181,28 @@ export class WeexApiClient {
       throw error;
     }
   }
+
+  /**
+   * 获取服务器时间（公共接口，无需签名）
+   * GET /capi/v2/market/time
+   * Weight(IP): 1
+   * @returns 服务器时间信息
+   */
+  async getServerTime(): Promise<ServerTimeResponse> {
+    const url = this.baseUrl + '/capi/v2/market/time';
+
+    try {
+      const response: AxiosResponse<ServerTimeResponse> = await axios.get(url);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `获取服务器时间失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
 }
 
 /**
@@ -184,6 +218,12 @@ async function example() {
   );
 
   try {
+    // 获取服务器时间（公共接口示例）
+    const serverTime = await client.getServerTime();
+    console.log('服务器时间:', serverTime);
+    console.log('ISO 格式:', serverTime.iso);
+    console.log('时间戳:', serverTime.timestamp);
+
     // GET request example
     const requestPath = '/api/uni/v3/order/currentPlan';
     const queryString = '?symbol=cmt_bchusdt&delegateType=0&startTime=1742213127794&endTime=1742213506548';
