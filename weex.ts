@@ -457,6 +457,74 @@ export interface BillsResponse {
 }
 
 /**
+ * 订单类型（开平仓方向）
+ */
+export type OrderSide = '1' | '2' | '3' | '4';
+// 1: 开多, 2: 开空, 3: 平多, 4: 平空
+
+/**
+ * 订单类型（执行方式）
+ */
+export type OrderExecutionType = '0' | '1' | '2' | '3';
+// 0: 普通, 1: 只做 Maker, 2: 全部成交或立即取消, 3: 立即成交并取消剩余
+
+/**
+ * 价格类型
+ */
+export type MatchPriceType = '0' | '1';
+// 0: 限价, 1: 市价
+
+/**
+ * 保证金模式（订单）
+ */
+export type OrderMarginMode = 1 | 3;
+// 1: 全仓模式, 3: 逐仓模式
+
+/**
+ * 仓位隔离模式
+ */
+export type SeparatedMode = 1 | 2;
+// 1: 合并模式, 2: 分离模式
+
+/**
+ * 下单请求参数
+ */
+export interface PlaceOrderParams {
+  /** 交易对（必填） */
+  symbol: string;
+  /** 自定义订单 ID（不超过 40 个字符，必填） */
+  client_oid: string;
+  /** 订单数量（不能为零或负数，必填） */
+  size: string;
+  /** 订单类型：1-开多, 2-开空, 3-平多, 4-平空（必填） */
+  type: OrderSide;
+  /** 订单执行类型：0-普通, 1-只做Maker, 2-全部成交或立即取消, 3-立即成交并取消剩余（必填） */
+  order_type: OrderExecutionType;
+  /** 价格匹配类型：0-限价, 1-市价（必填） */
+  match_price: MatchPriceType;
+  /** 订单价格（限价单必填） */
+  price: string;
+  /** 预设止盈价格（可选） */
+  presetTakeProfitPrice?: string;
+  /** 预设止损价格（可选） */
+  presetStopLossPrice?: string;
+  /** 保证金模式：1-全仓, 3-逐仓（默认：1） */
+  marginMode?: OrderMarginMode;
+  /** 仓位隔离模式：1-合并, 2-分离（默认：1） */
+  separatedMode?: SeparatedMode;
+}
+
+/**
+ * 下单响应
+ */
+export interface PlaceOrderResponse {
+  /** 客户端订单 ID */
+  client_oid: string | null;
+  /** 订单 ID */
+  order_id: string;
+}
+
+/**
  * Weex OpenAPI Client
  * Based on the official API documentation
  */
@@ -852,6 +920,58 @@ export class WeexApiClient {
       if (axios.isAxiosError(error)) {
         throw new Error(
           `获取账单历史失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 下单（私有接口，需要签名）
+   * POST /capi/v2/order/placeOrder
+   * Weight(IP): 2, Weight(UID): 5
+   * 需要权限：合约交易权限
+   * @param params - 下单参数
+   * @returns 下单响应
+   */
+  async placeOrder(params: PlaceOrderParams): Promise<PlaceOrderResponse> {
+    const requestPath = '/capi/v2/order/placeOrder';
+
+    // 构建请求体
+    const body: any = {
+      symbol: params.symbol,
+      client_oid: params.client_oid,
+      size: params.size,
+      type: params.type,
+      order_type: params.order_type,
+      match_price: params.match_price,
+      price: params.price,
+    };
+
+    // 添加可选参数
+    if (params.presetTakeProfitPrice !== undefined) {
+      body.presetTakeProfitPrice = params.presetTakeProfitPrice;
+    }
+    if (params.presetStopLossPrice !== undefined) {
+      body.presetStopLossPrice = params.presetStopLossPrice;
+    }
+    if (params.marginMode !== undefined) {
+      body.marginMode = params.marginMode;
+    }
+    if (params.separatedMode !== undefined) {
+      body.separatedMode = params.separatedMode;
+    }
+
+    try {
+      const response = await this.sendRequestPost<PlaceOrderResponse>(
+        requestPath,
+        body
+      );
+      return response;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `下单失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
         );
       }
       throw error;

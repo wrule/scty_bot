@@ -894,14 +894,183 @@ async function testGetAccountBills() {
 }
 
 /**
+ * 测试下单（私有接口）
+ * ⚠️ 警告：这是真实交易操作！请谨慎使用！
+ */
+async function testPlaceOrder() {
+  console.log('\n=== 测试下单接口 ===\n');
+  console.log('⚠️  警告：下单是真实交易操作，会产生实际的订单！\n');
+
+  // 从环境变量读取 API 密钥
+  const apiKey = process.env.WEEX_API_KEY || '';
+  const secretKey = process.env.WEEX_SECRET_KEY || '';
+  const passphrase = process.env.WEEX_PASSPHRASE || '';
+
+  if (!apiKey || !secretKey || !passphrase) {
+    console.error('❌ 请在 .env 文件中配置 WEEX_API_KEY, WEEX_SECRET_KEY, WEEX_PASSPHRASE');
+    return;
+  }
+
+  const client = new WeexApiClient(
+    apiKey,
+    secretKey,
+    passphrase,
+    'https://pro-openapi.weex.tech'
+  );
+
+  try {
+    // 示例：下一个限价开多单
+    console.log('📝 下单参数示例（仅展示，不实际执行）:');
+    console.log('-----------------------------------');
+
+    const orderParams = {
+      symbol: 'cmt_btcusdt',           // 交易对：BTC/USDT
+      client_oid: `test_${Date.now()}`, // 自定义订单 ID
+      size: '0.001',                    // 订单数量：0.001 BTC
+      type: '1' as const,               // 1: 开多
+      order_type: '0' as const,         // 0: 普通订单
+      match_price: '0' as const,        // 0: 限价
+      price: '50000',                   // 价格：50000 USDT（远低于市价，不会成交）
+      presetTakeProfitPrice: '55000',   // 止盈价：55000
+      presetStopLossPrice: '48000',     // 止损价：48000
+      marginMode: 1 as const,           // 1: 全仓模式
+      separatedMode: 1 as const,        // 1: 合并模式
+    };
+
+    console.log('交易对:', orderParams.symbol);
+    console.log('订单 ID:', orderParams.client_oid);
+    console.log('数量:', orderParams.size, 'BTC');
+    console.log('方向:', orderParams.type === '1' ? '开多 📈' : '开空 📉');
+    console.log('订单类型:', orderParams.order_type === '0' ? '普通' : '其他');
+    console.log('价格类型:', orderParams.match_price === '0' ? '限价' : '市价');
+    console.log('价格:', orderParams.price, 'USDT');
+    console.log('止盈价:', orderParams.presetTakeProfitPrice, 'USDT');
+    console.log('止损价:', orderParams.presetStopLossPrice, 'USDT');
+    console.log('保证金模式:', orderParams.marginMode === 1 ? '全仓' : '逐仓');
+    console.log('仓位模式:', orderParams.separatedMode === 1 ? '合并' : '分离');
+    console.log('-----------------------------------\n');
+
+    // 实际下单测试
+    console.log('🚀 正在下单...');
+    console.log('ℹ️  使用远低于市价的限价单，不会实际成交\n');
+
+    try {
+      const orderResult = await client.placeOrder(orderParams);
+
+      console.log('✅ 下单成功！');
+      console.log('-----------------------------------');
+      console.log('订单 ID:', orderResult.order_id);
+      console.log('客户端订单 ID:', orderResult.client_oid || '(null)');
+      console.log('-----------------------------------\n');
+
+      console.log('📝 说明：');
+      console.log('  - 订单已成功提交到交易所');
+      console.log('  - 由于价格远低于市价（50000 vs 当前约 86000），订单不会成交');
+      console.log('  - 订单会挂在订单簿上，等待价格到达');
+      console.log('  - 可以通过查询订单接口查看订单状态');
+      console.log('  - 可以通过取消订单接口取消该订单\n');
+
+      return orderResult;
+    } catch (error: any) {
+      console.log('❌ 下单失败');
+      console.log('-----------------------------------');
+
+      // 解析错误信息
+      if (error.message) {
+        console.log('错误信息:', error.message);
+
+        // 常见错误提示
+        if (error.message.includes('insufficient')) {
+          console.log('\n💡 提示：余额不足，这是正常的（账户无资金）');
+        } else if (error.message.includes('price')) {
+          console.log('\n💡 提示：价格参数错误');
+        } else if (error.message.includes('size')) {
+          console.log('\n💡 提示：数量参数错误');
+        }
+      }
+      console.log('-----------------------------------\n');
+
+      // 不抛出错误，继续执行后续代码
+    }
+
+    // 显示不同订单类型的示例
+    console.log('📚 订单类型说明:');
+    console.log('-----------------------------------');
+    console.log('订单方向 (type):');
+    console.log('  1 - 开多：买入开仓（看涨）📈');
+    console.log('  2 - 开空：卖出开仓（看跌）📉');
+    console.log('  3 - 平多：卖出平仓（平掉多头仓位）');
+    console.log('  4 - 平空：买入平仓（平掉空头仓位）');
+    console.log('');
+    console.log('订单执行类型 (order_type):');
+    console.log('  0 - 普通：正常订单');
+    console.log('  1 - 只做 Maker：只挂单，不吃单');
+    console.log('  2 - 全部成交或立即取消：FOK，要么全部成交，要么取消');
+    console.log('  3 - 立即成交并取消剩余：IOC，立即成交，剩余取消');
+    console.log('');
+    console.log('价格类型 (match_price):');
+    console.log('  0 - 限价：指定价格');
+    console.log('  1 - 市价：按市场最优价格成交');
+    console.log('');
+    console.log('保证金模式 (marginMode):');
+    console.log('  1 - 全仓：使用账户全部可用保证金');
+    console.log('  3 - 逐仓：只使用该仓位的保证金');
+    console.log('-----------------------------------\n');
+
+    // 显示使用示例
+    console.log('💡 使用示例:');
+    console.log('-----------------------------------');
+    console.log('// 1. 限价开多单');
+    console.log('await client.placeOrder({');
+    console.log('  symbol: "cmt_btcusdt",');
+    console.log('  client_oid: `order_${Date.now()}`,');
+    console.log('  size: "0.001",');
+    console.log('  type: "1",           // 开多');
+    console.log('  order_type: "0",     // 普通订单');
+    console.log('  match_price: "0",    // 限价');
+    console.log('  price: "50000",      // 限价 50000');
+    console.log('});');
+    console.log('');
+    console.log('// 2. 市价开空单');
+    console.log('await client.placeOrder({');
+    console.log('  symbol: "cmt_ethusdt",');
+    console.log('  client_oid: `order_${Date.now()}`,');
+    console.log('  size: "0.01",');
+    console.log('  type: "2",           // 开空');
+    console.log('  order_type: "0",     // 普通订单');
+    console.log('  match_price: "1",    // 市价');
+    console.log('  price: "0",          // 市价单价格填 0');
+    console.log('});');
+    console.log('');
+    console.log('// 3. 带止盈止损的限价单');
+    console.log('await client.placeOrder({');
+    console.log('  symbol: "cmt_btcusdt",');
+    console.log('  client_oid: `order_${Date.now()}`,');
+    console.log('  size: "0.001",');
+    console.log('  type: "1",');
+    console.log('  order_type: "0",');
+    console.log('  match_price: "0",');
+    console.log('  price: "50000",');
+    console.log('  presetTakeProfitPrice: "55000",  // 止盈');
+    console.log('  presetStopLossPrice: "48000",    // 止损');
+    console.log('});');
+    console.log('-----------------------------------');
+
+  } catch (error) {
+    console.error('❌ 下单失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 主测试函数
  */
 async function main() {
   try {
     console.log('🚀 开始测试 Weex API 客户端\n');
 
-    // 测试获取账单历史
-    await testGetAccountBills();
+    // 测试下单接口（仅展示参数，不实际执行）
+    await testPlaceOrder();
 
     console.log('\n✅ 测试完成！');
   } catch (error) {
