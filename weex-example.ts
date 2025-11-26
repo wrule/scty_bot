@@ -1922,14 +1922,201 @@ async function testChangeLeverage() {
 }
 
 /**
+ * 测试获取订单簿深度
+ */
+async function testGetOrderBookDepth() {
+  console.log('\n=== 测试获取订单簿深度 ===\n');
+
+  const apiKey = process.env.WEEX_API_KEY || '';
+  const secretKey = process.env.WEEX_SECRET_KEY || '';
+  const passphrase = process.env.WEEX_PASSPHRASE || '';
+
+  // 合约 API 客户端（公共接口不需要密钥，但为了统一使用同一个客户端）
+  const client = new WeexApiClient(
+    apiKey,
+    secretKey,
+    passphrase,
+    'https://pro-openapi.weex.tech'
+  );
+
+  try {
+    // 测试 1: 获取 BTC/USDT 的 15 档深度
+    console.log('📊 测试 1: 获取 BTC/USDT 的 15 档深度');
+    console.log('-----------------------------------\n');
+
+    const btcDepth15 = await client.getOrderBookDepth({
+      symbol: 'cmt_btcusdt',
+      limit: 15,
+    });
+
+    console.log('✅ 成功获取订单簿深度！');
+    console.log('时间戳:', btcDepth15.timestamp);
+    console.log('时间:', new Date(parseInt(btcDepth15.timestamp)).toLocaleString('zh-CN', {
+      timeZone: 'Asia/Shanghai'
+    }));
+    console.log('');
+
+    console.log('📈 卖单深度（Asks - 从低到高）:');
+    console.log('-----------------------------------');
+    console.log('价格\t\t\t数量');
+    btcDepth15.asks.slice(0, 5).forEach(([price, quantity]) => {
+      console.log(`${parseFloat(price).toFixed(2)}\t\t${quantity}`);
+    });
+    if (btcDepth15.asks.length > 5) {
+      console.log(`... 还有 ${btcDepth15.asks.length - 5} 档`);
+    }
+    console.log('');
+
+    console.log('📉 买单深度（Bids - 从高到低）:');
+    console.log('-----------------------------------');
+    console.log('价格\t\t\t数量');
+    btcDepth15.bids.slice(0, 5).forEach(([price, quantity]) => {
+      console.log(`${parseFloat(price).toFixed(2)}\t\t${quantity}`);
+    });
+    if (btcDepth15.bids.length > 5) {
+      console.log(`... 还有 ${btcDepth15.bids.length - 5} 档`);
+    }
+    console.log('');
+
+    // 计算买卖价差
+    if (btcDepth15.asks.length > 0 && btcDepth15.bids.length > 0) {
+      const bestAsk = parseFloat(btcDepth15.asks[0][0]);
+      const bestBid = parseFloat(btcDepth15.bids[0][0]);
+      const spread = bestAsk - bestBid;
+      const spreadPercent = (spread / bestBid) * 100;
+
+      console.log('💰 市场信息:');
+      console.log('-----------------------------------');
+      console.log('最优卖价（Ask）:', bestAsk.toFixed(2));
+      console.log('最优买价（Bid）:', bestBid.toFixed(2));
+      console.log('买卖价差:', spread.toFixed(2));
+      console.log('价差百分比:', spreadPercent.toFixed(4) + '%');
+      console.log('中间价:', ((bestAsk + bestBid) / 2).toFixed(2));
+      console.log('');
+    }
+
+    console.log('-----------------------------------\n');
+
+    // 测试 2: 获取 ETH/USDT 的 200 档深度
+    console.log('📊 测试 2: 获取 ETH/USDT 的 200 档深度');
+    console.log('-----------------------------------\n');
+
+    const ethDepth200 = await client.getOrderBookDepth({
+      symbol: 'cmt_ethusdt',
+      limit: 200,
+    });
+
+    console.log('✅ 成功获取订单簿深度！');
+    console.log('时间戳:', ethDepth200.timestamp);
+    console.log('');
+
+    console.log('📊 深度统计:');
+    console.log('-----------------------------------');
+    console.log('卖单档位数:', ethDepth200.asks.length);
+    console.log('买单档位数:', ethDepth200.bids.length);
+    console.log('');
+
+    // 计算深度
+    const askVolume = ethDepth200.asks.reduce((sum, [_, qty]) => sum + parseFloat(qty), 0);
+    const bidVolume = ethDepth200.bids.reduce((sum, [_, qty]) => sum + parseFloat(qty), 0);
+
+    console.log('📈 卖单总量:', askVolume.toFixed(2));
+    console.log('📉 买单总量:', bidVolume.toFixed(2));
+    console.log('总挂单量:', (askVolume + bidVolume).toFixed(2));
+    console.log('');
+
+    // 显示前 3 档和后 3 档
+    console.log('📈 卖单（前 3 档）:');
+    ethDepth200.asks.slice(0, 3).forEach(([price, quantity], index) => {
+      console.log(`  ${index + 1}. ${parseFloat(price).toFixed(2)} - ${quantity}`);
+    });
+    console.log('');
+
+    console.log('📉 买单（前 3 档）:');
+    ethDepth200.bids.slice(0, 3).forEach(([price, quantity], index) => {
+      console.log(`  ${index + 1}. ${parseFloat(price).toFixed(2)} - ${quantity}`);
+    });
+    console.log('');
+
+    if (ethDepth200.asks.length > 0 && ethDepth200.bids.length > 0) {
+      const bestAsk = parseFloat(ethDepth200.asks[0][0]);
+      const bestBid = parseFloat(ethDepth200.bids[0][0]);
+      const spread = bestAsk - bestBid;
+      const spreadPercent = (spread / bestBid) * 100;
+
+      console.log('💰 ETH/USDT 市场信息:');
+      console.log('-----------------------------------');
+      console.log('最优卖价:', bestAsk.toFixed(2));
+      console.log('最优买价:', bestBid.toFixed(2));
+      console.log('买卖价差:', spread.toFixed(2));
+      console.log('价差百分比:', spreadPercent.toFixed(4) + '%');
+      console.log('');
+    }
+
+    console.log('-----------------------------------\n');
+
+    // 测试 3: 默认深度（不指定 limit）
+    console.log('📊 测试 3: 获取 SOL/USDT 默认深度');
+    console.log('-----------------------------------\n');
+
+    const solDepth = await client.getOrderBookDepth({
+      symbol: 'cmt_solusdt',
+    });
+
+    console.log('✅ 成功获取订单簿深度！');
+    console.log('卖单档位数:', solDepth.asks.length);
+    console.log('买单档位数:', solDepth.bids.length);
+    console.log('');
+
+    if (solDepth.asks.length > 0 && solDepth.bids.length > 0) {
+      const bestAsk = parseFloat(solDepth.asks[0][0]);
+      const bestBid = parseFloat(solDepth.bids[0][0]);
+
+      console.log('💰 SOL/USDT 市场信息:');
+      console.log('-----------------------------------');
+      console.log('最优卖价:', bestAsk.toFixed(2));
+      console.log('最优买价:', bestBid.toFixed(2));
+      console.log('中间价:', ((bestAsk + bestBid) / 2).toFixed(2));
+      console.log('');
+    }
+
+    console.log('-----------------------------------\n');
+
+    console.log('💡 使用提示:');
+    console.log('-----------------------------------');
+    console.log('1. 深度档位:');
+    console.log('   - limit=15: 获取 15 档深度（快速查看）');
+    console.log('   - limit=200: 获取 200 档深度（详细分析）');
+    console.log('   - 不指定: 使用默认档位');
+    console.log('');
+    console.log('2. 数据结构:');
+    console.log('   - asks: 卖单，价格从低到高排序');
+    console.log('   - bids: 买单，价格从高到低排序');
+    console.log('   - 每档: [价格, 数量]');
+    console.log('');
+    console.log('3. 应用场景:');
+    console.log('   - 查看市场流动性');
+    console.log('   - 分析买卖压力');
+    console.log('   - 确定最优成交价格');
+    console.log('   - 检测大额挂单（支撑/阻力位）');
+    console.log('-----------------------------------');
+
+    return { btcDepth15, ethDepth200, solDepth };
+  } catch (error) {
+    console.error('❌ 获取订单簿深度失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 主测试函数
  */
 async function main() {
   try {
     console.log('🚀 开始测试 Weex API 客户端\n');
 
-    // 测试修改杠杆
-    await testChangeLeverage();
+    // 测试获取订单簿深度
+    await testGetOrderBookDepth();
 
     console.log('\n✅ 测试完成！');
   } catch (error) {

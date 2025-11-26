@@ -780,6 +780,33 @@ export interface ChangeLeverageResponse {
 }
 
 /**
+ * 深度档位（价格和数量）
+ */
+export type DepthLevel = [string, string];  // [价格, 数量]
+
+/**
+ * 获取订单簿深度请求参数
+ */
+export interface GetOrderBookDepthParams {
+  /** 交易对（必填） */
+  symbol: string;
+  /** 深度档位数量（可选）：15 或 200，默认 15 */
+  limit?: 15 | 200;
+}
+
+/**
+ * 订单簿深度响应
+ */
+export interface OrderBookDepthResponse {
+  /** 卖单深度（ask，从低到高排序） */
+  asks: DepthLevel[];
+  /** 买单深度（bid，从高到低排序） */
+  bids: DepthLevel[];
+  /** 时间戳 */
+  timestamp: string;
+}
+
+/**
  * 账户类型
  */
 export type AccountType = 'SPOT' | 'FUND';
@@ -1094,6 +1121,44 @@ export class WeexApiClient {
       volume: candle[5],
       turnover: candle[6],
     }));
+  }
+
+  /**
+   * 获取订单簿深度（公共接口，无需签名）
+   * GET /capi/v2/market/depth
+   * Weight(IP): 1
+   * @param params - 请求参数
+   * @returns 订单簿深度数据
+   */
+  async getOrderBookDepth(params: GetOrderBookDepthParams): Promise<OrderBookDepthResponse> {
+    const url = `${this.baseUrl}/capi/v2/market/depth`;
+
+    // 构建查询参数
+    const queryParams: any = {
+      symbol: params.symbol,
+    };
+
+    if (params.limit) {
+      queryParams.limit = params.limit;
+    }
+
+    try {
+      const response = await axios.get<OrderBookDepthResponse>(url, {
+        params: queryParams,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `获取订单簿深度失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
   }
 
   /**
