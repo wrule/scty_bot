@@ -12,7 +12,7 @@ async function testGetServerTime() {
     '', // API Key（公共接口不需要）
     '', // Secret Key
     '', // Access Passphrase
-    'https://api-contract.weex.com'  // 基础 URL
+    'https://pro-openapi.weex.tech'  // 基础 URL
   );
 
   try {
