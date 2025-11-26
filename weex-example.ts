@@ -2510,14 +2510,195 @@ async function testGetSingleTicker() {
 }
 
 /**
+ * 测试上传 AI 日志
+ */
+async function testUploadAiLog() {
+  console.log('\n=== 测试上传 AI 日志 ===\n');
+
+  const apiKey = process.env.WEEX_API_KEY || '';
+  const secretKey = process.env.WEEX_SECRET_KEY || '';
+  const passphrase = process.env.WEEX_PASSPHRASE || '';
+
+  if (!apiKey || !secretKey || !passphrase) {
+    console.error('❌ 请在 .env 文件中配置 API 密钥');
+    return;
+  }
+
+  // 合约 API 客户端
+  const client = new WeexApiClient(
+    apiKey,
+    secretKey,
+    passphrase,
+    'https://pro-openapi.weex.tech'
+  );
+
+  try {
+    // 测试 1: 上传市场分析阶段的 AI 日志
+    console.log('📊 测试 1: 上传市场分析阶段的 AI 日志');
+    console.log('-----------------------------------\n');
+
+    const marketAnalysisLog = await client.uploadAiLog({
+      orderId: null,  // 市场分析阶段还没有订单
+      stage: 'market_analysis',
+      model: 'deepseek-chat',
+      input: {
+        symbol: 'cmt_btcusdt',
+        timeframe: '1h',
+        indicators: ['RSI', 'MACD', 'EMA'],
+        marketData: {
+          price: 87241.60,
+          volume24h: 7361011073,
+          priceChange24h: 0.34
+        }
+      },
+      output: {
+        signal: 'BUY',
+        confidence: 0.75,
+        reasoning: 'RSI 显示超卖，MACD 金叉，价格突破 EMA20',
+        targetPrice: 88000,
+        stopLoss: 86500
+      },
+      explanation: 'AI 模型分析市场数据后生成买入信号'
+    });
+
+    console.log('✅ 上传成功！');
+    console.log('响应代码:', marketAnalysisLog.code);
+    console.log('响应消息:', marketAnalysisLog.msg);
+    console.log('业务数据:', marketAnalysisLog.data);
+    console.log('请求时间:', new Date(marketAnalysisLog.requestTime).toLocaleString('zh-CN', {
+      timeZone: 'Asia/Shanghai'
+    }));
+    console.log('-----------------------------------\n');
+
+    // 等待一下，避免速率限制
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // 测试 2: 上传订单执行阶段的 AI 日志
+    console.log('📊 测试 2: 上传订单执行阶段的 AI 日志');
+    console.log('-----------------------------------\n');
+
+    const orderExecutionLog = await client.uploadAiLog({
+      orderId: 123456789,  // 假设的订单 ID
+      stage: 'order_execution',
+      model: 'deepseek-chat',
+      input: {
+        signal: 'BUY',
+        symbol: 'cmt_btcusdt',
+        currentPrice: 87241.60,
+        targetPrice: 88000,
+        stopLoss: 86500,
+        accountBalance: 1000,
+        riskPercentage: 2
+      },
+      output: {
+        action: 'PLACE_ORDER',
+        orderType: 'LIMIT',
+        side: 'BUY',
+        price: 87200,
+        quantity: 0.01,
+        leverage: 5,
+        positionValue: 436,
+        risk: 20  // 2% of 1000
+      },
+      explanation: 'AI 模型根据信号和风险管理规则生成订单参数'
+    });
+
+    console.log('✅ 上传成功！');
+    console.log('响应代码:', orderExecutionLog.code);
+    console.log('响应消息:', orderExecutionLog.msg);
+    console.log('业务数据:', orderExecutionLog.data);
+    console.log('-----------------------------------\n');
+
+    // 等待一下
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // 测试 3: 上传风险管理阶段的 AI 日志
+    console.log('📊 测试 3: 上传风险管理阶段的 AI 日志');
+    console.log('-----------------------------------\n');
+
+    const riskManagementLog = await client.uploadAiLog({
+      orderId: 123456789,
+      stage: 'risk_management',
+      model: 'deepseek-chat',
+      input: {
+        position: {
+          symbol: 'cmt_btcusdt',
+          side: 'LONG',
+          entryPrice: 87200,
+          currentPrice: 87800,
+          quantity: 0.01,
+          unrealizedPnl: 6
+        },
+        accountBalance: 1000,
+        marketCondition: 'volatile'
+      },
+      output: {
+        action: 'ADJUST_STOP_LOSS',
+        newStopLoss: 87000,
+        reasoning: '价格上涨，移动止损到盈亏平衡点以上',
+        riskReward: 2.5
+      },
+      explanation: 'AI 模型监控持仓并调整风险参数'
+    });
+
+    console.log('✅ 上传成功！');
+    console.log('响应代码:', riskManagementLog.code);
+    console.log('响应消息:', riskManagementLog.msg);
+    console.log('业务数据:', riskManagementLog.data);
+    console.log('-----------------------------------\n');
+
+    console.log('💡 使用提示:');
+    console.log('-----------------------------------');
+    console.log('1. AI 日志的重要性:');
+    console.log('   - 证明 AI 参与交易决策');
+    console.log('   - 满足 Hackathon 合规要求');
+    console.log('   - 避免被取消资格');
+    console.log('');
+    console.log('2. 必须包含的信息:');
+    console.log('   - model: AI 模型名称和版本');
+    console.log('   - input: 输入给 AI 的数据');
+    console.log('   - output: AI 生成的决策');
+    console.log('   - stage: 交易阶段标识');
+    console.log('');
+    console.log('3. 建议的交易阶段:');
+    console.log('   - market_analysis: 市场分析');
+    console.log('   - signal_generation: 信号生成');
+    console.log('   - order_execution: 订单执行');
+    console.log('   - risk_management: 风险管理');
+    console.log('   - close_position: 平仓决策');
+    console.log('');
+    console.log('4. 最佳实践:');
+    console.log('   - 每个交易决策都上传日志');
+    console.log('   - 包含详细的推理过程');
+    console.log('   - 记录输入和输出的完整数据');
+    console.log('   - 使用有意义的 stage 标识符');
+    console.log('');
+    console.log('5. 注意事项:');
+    console.log('   - 只有白名单 UID 可以上传');
+    console.log('   - 权重很低（1），可以频繁调用');
+    console.log('   - 建议在每次 AI 决策后立即上传');
+    console.log('-----------------------------------');
+
+    return {
+      marketAnalysisLog,
+      orderExecutionLog,
+      riskManagementLog
+    };
+  } catch (error) {
+    console.error('❌ 上传 AI 日志失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 主测试函数
  */
 async function main() {
   try {
     console.log('🚀 开始测试 Weex API 客户端\n');
 
-    // 测试获取单个 Ticker
-    await testGetSingleTicker();
+    // 测试上传 AI 日志
+    await testUploadAiLog();
 
     console.log('\n✅ 测试完成！');
   } catch (error) {

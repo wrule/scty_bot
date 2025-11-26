@@ -845,6 +845,38 @@ export interface GetSingleTickerParams {
 }
 
 /**
+ * 上传 AI 日志请求参数
+ */
+export interface UploadAiLogParams {
+  /** 订单 ID（可选） */
+  orderId?: number | null;
+  /** 阶段标识符（必填） */
+  stage: string;
+  /** 模型名称（必填） */
+  model: string;
+  /** 输入参数（必填，JSON 对象） */
+  input: Record<string, any>;
+  /** 输出结果（必填，JSON 对象） */
+  output: Record<string, any>;
+  /** 说明（可选） */
+  explanation?: string;
+}
+
+/**
+ * 上传 AI 日志响应
+ */
+export interface UploadAiLogResponse {
+  /** 响应代码，"00000" 表示成功 */
+  code: string;
+  /** 响应消息，"success" 表示成功 */
+  msg: string;
+  /** 请求时间戳（毫秒） */
+  requestTime: number;
+  /** 返回的业务数据，"upload success" 表示上传成功 */
+  data: string;
+}
+
+/**
  * 账户类型
  */
 export type AccountType = 'SPOT' | 'FUND';
@@ -1651,6 +1683,56 @@ export class WeexApiClient {
       if (axios.isAxiosError(error)) {
         throw new Error(
           `修改杠杆失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 上传 AI 日志（私有接口，需要签名）
+   * POST /capi/v2/order/uploadAiLog
+   * Weight(IP): 1, Weight(UID): 1
+   *
+   * 重要规则：
+   * 进入实盘交易阶段的 BUIDLs 必须提供包含以下内容的 AI 日志：
+   * - 模型版本
+   * - 输入和输出数据
+   * - 订单执行详情
+   *
+   * AI 日志用于验证 AI 参与和合规性。如果未能提供有效的 AI 参与证明，
+   * 团队将被取消资格并从排名中移除。只有官方白名单上批准的 UID 可以提交 AI 日志数据。
+   *
+   * @param params - AI 日志参数
+   * @returns 上传响应
+   */
+  async uploadAiLog(params: UploadAiLogParams): Promise<UploadAiLogResponse> {
+    const requestPath = '/capi/v2/order/uploadAiLog';
+
+    // 构建请求体
+    const bodyObj: any = {
+      orderId: params.orderId || null,
+      stage: params.stage,
+      model: params.model,
+      input: params.input,
+      output: params.output,
+    };
+
+    if (params.explanation) {
+      bodyObj.explanation = params.explanation;
+    }
+
+    try {
+      const response = await this.sendRequestPost<UploadAiLogResponse>(
+        requestPath,
+        bodyObj,
+        ''
+      );
+      return response;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `上传 AI 日志失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
         );
       }
       throw error;
