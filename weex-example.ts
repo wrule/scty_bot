@@ -1173,14 +1173,199 @@ async function testGetSpotAccountAssets() {
 }
 
 /**
+ * 测试内部划转：从现货账户转到合约账户
+ */
+async function testInternalWithdrawal() {
+  console.log('\n=== 测试内部划转（现货 → 合约）===\n');
+
+  // 从环境变量读取 API 密钥
+  const apiKey = process.env.WEEX_API_KEY || '';
+  const secretKey = process.env.WEEX_SECRET_KEY || '';
+  const passphrase = process.env.WEEX_PASSPHRASE || '';
+
+  if (!apiKey || !secretKey || !passphrase) {
+    console.error('❌ 请在 .env 文件中配置 WEEX_API_KEY, WEEX_SECRET_KEY, WEEX_PASSPHRASE');
+    return;
+  }
+
+  // 现货 API 客户端
+  const spotClient = new WeexApiClient(apiKey, secretKey, passphrase);
+
+  // 合约 API 客户端
+  const contractClient = new WeexApiClient(
+    apiKey,
+    secretKey,
+    passphrase,
+    'https://pro-openapi.weex.tech'
+  );
+
+  try {
+    // 步骤 1: 获取用户 ID
+    console.log('📋 步骤 1: 获取用户 ID');
+    console.log('-----------------------------------');
+    const accountInfo = await contractClient.getAccounts();
+
+    if (!accountInfo || !accountInfo.account) {
+      console.error('❌ 未找到账户信息');
+      return;
+    }
+
+    const userId = accountInfo.account.user_id;
+    console.log('✅ 用户 ID:', userId);
+    console.log('✅ 账户 ID:', accountInfo.account.id);
+    console.log('-----------------------------------\n');
+
+    // 等待避免速率限制
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // 步骤 2: 查看现货账户余额（划转前）
+    console.log('📋 步骤 2: 查看现货账户余额（划转前）');
+    console.log('-----------------------------------');
+    const spotAssetsBefore = await spotClient.getSpotAccountAssets();
+    const usdtBefore = spotAssetsBefore.data.find(a => a.coinName === 'USDT');
+
+    if (!usdtBefore) {
+      console.error('❌ 现货账户中未找到 USDT');
+      return;
+    }
+
+    console.log('现货账户 USDT:');
+    console.log('  可用:', parseFloat(usdtBefore.available).toFixed(8));
+    console.log('  冻结:', parseFloat(usdtBefore.frozen).toFixed(8));
+    console.log('  总计:', parseFloat(usdtBefore.equity).toFixed(8));
+    console.log('-----------------------------------\n');
+
+    // 等待避免速率限制
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // 步骤 3: 查看合约账户余额（划转前）
+    console.log('📋 步骤 3: 查看合约账户余额（划转前）');
+    console.log('-----------------------------------');
+    const contractAssetsBefore = await contractClient.getContractAccountAssets();
+    const contractUsdtBefore = contractAssetsBefore.find(a => a.coinName === 'USDT');
+
+    if (contractUsdtBefore) {
+      console.log('合约账户 USDT:');
+      console.log('  可用:', parseFloat(contractUsdtBefore.available).toFixed(8));
+      console.log('  冻结:', parseFloat(contractUsdtBefore.frozen).toFixed(8));
+      console.log('  总计:', parseFloat(contractUsdtBefore.equity).toFixed(8));
+    } else {
+      console.log('合约账户 USDT: 0.00000000（暂无）');
+    }
+    console.log('-----------------------------------\n');
+
+    // 等待避免速率限制
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // 步骤 4: 执行划转
+    console.log('📋 步骤 4: 执行划转（1000 USDT）');
+    console.log('-----------------------------------');
+    console.log('🚀 正在划转...');
+    console.log('  从: 现货账户 (SPOT)');
+    console.log('  到: 合约账户 (SPOT)');
+    console.log('  币种: USDT');
+    console.log('  金额: 1000');
+    console.log('  目标用户 ID:', userId);
+    console.log('');
+
+    const transferResult = await spotClient.internalWithdrawal({
+      toUserId: userId,
+      coin: 'USDT',
+      amount: '1000',
+      fromAccountType: 'SPOT',
+      toAccountType: 'SPOT',
+    });
+
+    console.log('✅ 划转成功！');
+    console.log('  响应代码:', transferResult.code);
+    console.log('  划转 ID:', transferResult.id);
+    console.log('  时间:', new Date(transferResult.timestamp).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }));
+    console.log('-----------------------------------\n');
+
+    // 等待一下，让系统处理划转
+    console.log('⏳ 等待 2 秒，让系统处理划转...\n');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // 步骤 5: 查看现货账户余额（划转后）
+    console.log('📋 步骤 5: 查看现货账户余额（划转后）');
+    console.log('-----------------------------------');
+
+    // 等待避免速率限制
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const spotAssetsAfter = await spotClient.getSpotAccountAssets();
+    const usdtAfter = spotAssetsAfter.data.find(a => a.coinName === 'USDT');
+
+    if (usdtAfter) {
+      console.log('现货账户 USDT:');
+      console.log('  可用:', parseFloat(usdtAfter.available).toFixed(8));
+      console.log('  冻结:', parseFloat(usdtAfter.frozen).toFixed(8));
+      console.log('  总计:', parseFloat(usdtAfter.equity).toFixed(8));
+
+      const change = parseFloat(usdtAfter.equity) - parseFloat(usdtBefore.equity);
+      console.log('  变化:', change.toFixed(8), change < 0 ? '📉' : '📈');
+    }
+    console.log('-----------------------------------\n');
+
+    // 步骤 6: 查看合约账户余额（划转后）
+    console.log('📋 步骤 6: 查看合约账户余额（划转后）');
+    console.log('-----------------------------------');
+
+    // 等待避免速率限制
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const contractAssetsAfter = await contractClient.getContractAccountAssets();
+    const contractUsdtAfter = contractAssetsAfter.find(a => a.coinName === 'USDT');
+
+    if (contractUsdtAfter) {
+      console.log('合约账户 USDT:');
+      console.log('  可用:', parseFloat(contractUsdtAfter.available).toFixed(8));
+      console.log('  冻结:', parseFloat(contractUsdtAfter.frozen).toFixed(8));
+      console.log('  总计:', parseFloat(contractUsdtAfter.equity).toFixed(8));
+
+      const beforeEquity = contractUsdtBefore ? parseFloat(contractUsdtBefore.equity) : 0;
+      const change = parseFloat(contractUsdtAfter.equity) - beforeEquity;
+      console.log('  变化:', change.toFixed(8), change > 0 ? '📈' : '📉');
+    } else {
+      console.log('合约账户 USDT: 0.00000000（暂无）');
+    }
+    console.log('-----------------------------------\n');
+
+    // 步骤 7: 验证结果
+    console.log('📋 步骤 7: 验证划转结果');
+    console.log('-----------------------------------');
+
+    const spotChange = parseFloat(usdtAfter?.equity || '0') - parseFloat(usdtBefore.equity);
+    const contractChange = parseFloat(contractUsdtAfter?.equity || '0') - (contractUsdtBefore ? parseFloat(contractUsdtBefore.equity) : 0);
+
+    console.log('现货账户变化:', spotChange.toFixed(8), 'USDT');
+    console.log('合约账户变化:', contractChange.toFixed(8), 'USDT');
+
+    if (Math.abs(spotChange + 1000) < 0.01 && Math.abs(contractChange - 1000) < 0.01) {
+      console.log('\n✅ 验证成功！划转完成！');
+      console.log('  现货账户减少了 1000 USDT');
+      console.log('  合约账户增加了 1000 USDT');
+    } else {
+      console.log('\n⚠️  验证结果异常，请检查账户余额');
+    }
+    console.log('-----------------------------------');
+
+    return transferResult;
+  } catch (error) {
+    console.error('❌ 内部划转测试失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 主测试函数
  */
 async function main() {
   try {
     console.log('🚀 开始测试 Weex API 客户端\n');
 
-    // 测试获取现货账户资产
-    await testGetSpotAccountAssets();
+    // 测试内部划转
+    await testInternalWithdrawal();
 
     console.log('\n✅ 测试完成！');
   } catch (error) {

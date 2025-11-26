@@ -555,6 +555,40 @@ export interface PlaceOrderResponse {
 }
 
 /**
+ * 账户类型
+ */
+export type AccountType = 'SPOT' | 'FUND';
+// SPOT: 现货钱包, FUND: 资金钱包
+
+/**
+ * 内部划转请求参数
+ */
+export interface InternalWithdrawalParams {
+  /** 转入用户 ID（必填） */
+  toUserId: string;
+  /** 币种类型（必填，如 USDT, BTC） */
+  coin: string;
+  /** 转账金额（必填，最多 6 位小数） */
+  amount: string;
+  /** 转出账户类型（可选，默认：SPOT） */
+  fromAccountType?: AccountType;
+  /** 转入账户类型（可选，默认：SPOT） */
+  toAccountType?: AccountType;
+}
+
+/**
+ * 内部划转响应
+ */
+export interface InternalWithdrawalResponse {
+  /** 响应代码 */
+  code: string;
+  /** 提现 ID */
+  id: string;
+  /** 时间戳 */
+  timestamp: number;
+}
+
+/**
  * Weex OpenAPI Client
  * Based on the official API documentation
  */
@@ -1029,6 +1063,42 @@ export class WeexApiClient {
       if (axios.isAxiosError(error)) {
         throw new Error(
           `下单失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 内部划转（私有接口，需要签名）
+   * POST /api/v2/rebate/affiliate/internalWithdrawal
+   * Weight(IP): 100, Weight(UID): 100
+   * 需要权限：提现权限
+   * @param params - 划转参数
+   * @returns 划转响应
+   */
+  async internalWithdrawal(params: InternalWithdrawalParams): Promise<InternalWithdrawalResponse> {
+    const requestPath = '/api/v2/rebate/affiliate/internalWithdrawal';
+
+    // 构建请求体
+    const body: any = {
+      toUserId: params.toUserId,
+      coin: params.coin,
+      amount: params.amount,
+      fromAccountType: params.fromAccountType || 'SPOT',
+      toAccountType: params.toAccountType || 'SPOT',
+    };
+
+    try {
+      const response = await this.sendRequestPost<InternalWithdrawalResponse>(
+        requestPath,
+        body
+      );
+      return response;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `内部划转失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
         );
       }
       throw error;
