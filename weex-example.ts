@@ -249,20 +249,108 @@ async function testGetCandles() {
 }
 
 /**
+ * 测试获取 BTC/USDT 15分钟K线（至少100根）
+ */
+async function testBTC15MinCandles() {
+  console.log('\n=== 测试获取 BTC/USDT 15分钟K线（100根） ===\n');
+
+  const client = new WeexApiClient(
+    '',
+    '',
+    '',
+    'https://api-contract.weex.com'
+  );
+
+  try {
+    console.log('📈 正在获取 BTC/USDT 15分钟K线数据...');
+    console.log('-----------------------------------');
+
+    const candles = await client.getCandlesFormatted({
+      symbol: 'cmt_btcusdt',
+      granularity: '15m',
+      limit: 100
+    });
+
+    console.log(`✅ 成功获取 ${candles.length} 根 15分钟K线数据\n`);
+
+    if (candles.length > 0) {
+      // 第一根K线
+      const firstCandle = candles[0];
+      const firstTime = new Date(firstCandle.time);
+      console.log('📊 第一根K线:');
+      console.log('  时间:', firstTime.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }));
+      console.log('  开盘价:', firstCandle.open);
+      console.log('  最高价:', firstCandle.high);
+      console.log('  最低价:', firstCandle.low);
+      console.log('  收盘价:', firstCandle.close);
+      console.log('  成交量:', firstCandle.volume);
+
+      // 最后一根K线（最新）
+      const lastCandle = candles[candles.length - 1];
+      const lastTime = new Date(lastCandle.time);
+      console.log('\n📊 最后一根K线（最新）:');
+      console.log('  时间:', lastTime.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }));
+      console.log('  开盘价:', lastCandle.open);
+      console.log('  最高价:', lastCandle.high);
+      console.log('  最低价:', lastCandle.low);
+      console.log('  收盘价:', lastCandle.close);
+      console.log('  成交量:', lastCandle.volume);
+
+      // 计算统计数据
+      const prices = candles.map(c => parseFloat(c.close));
+      const highPrices = candles.map(c => parseFloat(c.high));
+      const lowPrices = candles.map(c => parseFloat(c.low));
+      const volumes = candles.map(c => parseFloat(c.volume));
+
+      const maxPrice = Math.max(...highPrices);
+      const minPrice = Math.min(...lowPrices);
+      const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+      const totalVolume = volumes.reduce((a, b) => a + b, 0);
+
+      // 计算整体涨跌幅
+      const totalChange = ((parseFloat(lastCandle.close) - parseFloat(firstCandle.open)) / parseFloat(firstCandle.open) * 100);
+
+      console.log('\n📈 统计数据:');
+      console.log('-----------------------------------');
+      console.log('时间跨度:', firstTime.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }), '至', lastTime.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }));
+      console.log('K线数量:', candles.length, '根');
+      console.log('最高价:', maxPrice.toFixed(2), 'USDT');
+      console.log('最低价:', minPrice.toFixed(2), 'USDT');
+      console.log('平均价:', avgPrice.toFixed(2), 'USDT');
+      console.log('总成交量:', totalVolume.toFixed(4), 'BTC');
+      console.log('整体涨跌幅:', totalChange.toFixed(2) + '%', totalChange >= 0 ? '📈' : '📉');
+      console.log('价格波动:', ((maxPrice - minPrice) / minPrice * 100).toFixed(2) + '%');
+
+      // 显示最近 5 根K线的详细信息
+      console.log('\n📊 最近 5 根K线详情:');
+      console.log('-----------------------------------');
+      const recentCandles = candles.slice(-5);
+      recentCandles.forEach((candle, index) => {
+        const time = new Date(candle.time);
+        const change = ((parseFloat(candle.close) - parseFloat(candle.open)) / parseFloat(candle.open) * 100).toFixed(2);
+        const emoji = parseFloat(change) >= 0 ? '📈' : '📉';
+        console.log(`${index + 1}. ${time.toLocaleTimeString('zh-CN', { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit' })} | O:${candle.open} H:${candle.high} L:${candle.low} C:${candle.close} | ${change}% ${emoji}`);
+      });
+
+      console.log('-----------------------------------');
+    }
+
+    return candles;
+  } catch (error) {
+    console.error('❌ 获取K线数据失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 主测试函数
  */
 async function main() {
   try {
-    // 测试获取服务器时间
-    await testGetServerTime();
+    // 测试获取 BTC/USDT 15分钟K线
+    await testBTC15MinCandles();
 
-    // 测试获取合约信息
-    await testGetContracts();
-
-    // 测试获取K线数据
-    await testGetCandles();
-
-    console.log('\n✅ 所有测试完成！');
+    console.log('\n✅ 测试完成！');
   } catch (error) {
     console.error('\n❌ 测试失败:', error);
     process.exit(1);
