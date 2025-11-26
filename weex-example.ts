@@ -2691,14 +2691,182 @@ async function testUploadAiLog() {
 }
 
 /**
+ * 测试获取成交记录
+ */
+async function testGetTrades() {
+  console.log('\n=== 测试获取成交记录 ===\n');
+
+  // 合约 API 客户端（公共接口，无需密钥）
+  const client = new WeexApiClient(
+    '',
+    '',
+    '',
+    'https://pro-openapi.weex.tech'
+  );
+
+  try {
+    // 测试 1: 获取 BTC/USDT 最近 10 笔成交
+    console.log('📊 测试 1: 获取 BTC/USDT 最近 10 笔成交');
+    console.log('-----------------------------------\n');
+
+    const btcTrades = await client.getTrades({
+      symbol: 'cmt_btcusdt',
+      limit: 10
+    });
+
+    console.log(`✅ 成功获取 ${btcTrades.length} 笔成交记录\n`);
+
+    if (btcTrades.length > 0) {
+      // 显示最新一笔成交
+      const latestTrade = btcTrades[0];
+      console.log('📈 最新成交:');
+      console.log('  成交 ID:', latestTrade.ticketId);
+      console.log('  成交时间:', new Date(latestTrade.time).toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai'
+      }));
+      console.log('  成交价格:', latestTrade.price);
+      console.log('  成交数量:', latestTrade.size);
+      console.log('  成交金额:', latestTrade.value);
+      console.log('  方向:', latestTrade.isBuyerMaker ? '🔴 卖出' : '🟢 买入');
+      console.log('  完全匹配:', latestTrade.isBestMatch ? '✅' : '❌');
+      console.log('  合约面值:', latestTrade.contractVal);
+      console.log('');
+
+      // 统计买卖方向
+      const buyTrades = btcTrades.filter(t => !t.isBuyerMaker);
+      const sellTrades = btcTrades.filter(t => t.isBuyerMaker);
+
+      console.log('📊 成交统计:');
+      console.log('  买入成交:', buyTrades.length, '笔');
+      console.log('  卖出成交:', sellTrades.length, '笔');
+
+      // 计算成交量
+      const totalVolume = btcTrades.reduce((sum, t) => sum + parseFloat(t.size), 0);
+      const totalValue = btcTrades.reduce((sum, t) => sum + parseFloat(t.value), 0);
+
+      console.log('  总成交量:', totalVolume.toFixed(4), 'BTC');
+      console.log('  总成交额:', totalValue.toFixed(2), 'USDT');
+
+      // 价格范围
+      const prices = btcTrades.map(t => parseFloat(t.price));
+      const maxPrice = Math.max(...prices);
+      const minPrice = Math.min(...prices);
+
+      console.log('  价格范围:', `$${minPrice.toFixed(2)} - $${maxPrice.toFixed(2)}`);
+      console.log('  价格波动:', `$${(maxPrice - minPrice).toFixed(2)}`);
+    }
+    console.log('-----------------------------------\n');
+
+    // 测试 2: 获取 ETH/USDT 最近 50 笔成交
+    console.log('📊 测试 2: 获取 ETH/USDT 最近 50 笔成交');
+    console.log('-----------------------------------\n');
+
+    const ethTrades = await client.getTrades({
+      symbol: 'cmt_ethusdt',
+      limit: 50
+    });
+
+    console.log(`✅ 成功获取 ${ethTrades.length} 笔成交记录\n`);
+
+    if (ethTrades.length > 0) {
+      // 分析成交密度
+      const timeSpan = ethTrades[0].time - ethTrades[ethTrades.length - 1].time;
+      const tradesPerMinute = (ethTrades.length / (timeSpan / 60000)).toFixed(2);
+
+      console.log('📈 成交密度分析:');
+      console.log('  时间跨度:', (timeSpan / 1000).toFixed(0), '秒');
+      console.log('  成交频率:', tradesPerMinute, '笔/分钟');
+
+      // 买卖压力
+      const buyVolume = ethTrades
+        .filter(t => !t.isBuyerMaker)
+        .reduce((sum, t) => sum + parseFloat(t.size), 0);
+      const sellVolume = ethTrades
+        .filter(t => t.isBuyerMaker)
+        .reduce((sum, t) => sum + parseFloat(t.size), 0);
+
+      console.log('  买入量:', buyVolume.toFixed(4), 'ETH');
+      console.log('  卖出量:', sellVolume.toFixed(4), 'ETH');
+      console.log('  买卖比:', (buyVolume / sellVolume).toFixed(2));
+
+      // 平均成交价
+      const avgPrice = ethTrades.reduce((sum, t) =>
+        sum + parseFloat(t.price), 0) / ethTrades.length;
+
+      console.log('  平均价格:', `$${avgPrice.toFixed(2)}`);
+    }
+    console.log('-----------------------------------\n');
+
+    // 测试 3: 获取 SOL/USDT 默认数量成交
+    console.log('📊 测试 3: 获取 SOL/USDT 默认数量成交');
+    console.log('-----------------------------------\n');
+
+    const solTrades = await client.getTrades({
+      symbol: 'cmt_solusdt'
+      // 不指定 limit，使用默认值 100
+    });
+
+    console.log(`✅ 成功获取 ${solTrades.length} 笔成交记录\n`);
+
+    if (solTrades.length > 0) {
+      // 显示最近 5 笔成交
+      console.log('📋 最近 5 笔成交:');
+      console.log('-----------------------------------');
+      console.log('时间\t\t\t价格\t\t数量\t方向');
+      console.log('-----------------------------------');
+
+      solTrades.slice(0, 5).forEach(trade => {
+        const time = new Date(trade.time).toLocaleTimeString('zh-CN', {
+          timeZone: 'Asia/Shanghai',
+          hour12: false
+        });
+        const direction = trade.isBuyerMaker ? '🔴 卖' : '🟢 买';
+        console.log(`${time}\t$${trade.price}\t${trade.size}\t${direction}`);
+      });
+      console.log('-----------------------------------');
+    }
+    console.log('');
+
+    console.log('💡 使用提示:');
+    console.log('-----------------------------------');
+    console.log('1. 成交记录的用途:');
+    console.log('   - 分析市场活跃度');
+    console.log('   - 判断买卖压力');
+    console.log('   - 发现大额成交');
+    console.log('   - 计算成交密度');
+    console.log('');
+    console.log('2. 参数说明:');
+    console.log('   - symbol: 交易对（必填）');
+    console.log('   - limit: 数据大小，1-1000，默认 100');
+    console.log('');
+    console.log('3. 字段含义:');
+    console.log('   - isBuyerMaker: true=卖出，false=买入');
+    console.log('   - isBestMatch: 是否完全匹配');
+    console.log('   - contractVal: 合约面值');
+    console.log('');
+    console.log('4. AI 交易应用:');
+    console.log('   - 监控大额成交（鲸鱼交易）');
+    console.log('   - 分析买卖压力比');
+    console.log('   - 计算成交密度判断趋势');
+    console.log('   - 检测异常成交模式');
+    console.log('-----------------------------------');
+
+    return { btcTrades, ethTrades, solTrades };
+  } catch (error) {
+    console.error('❌ 获取成交记录失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 主测试函数
  */
 async function main() {
   try {
     console.log('🚀 开始测试 Weex API 客户端\n');
 
-    // 测试上传 AI 日志
-    await testUploadAiLog();
+    // 测试获取成交记录
+    await testGetTrades();
 
     console.log('\n✅ 测试完成！');
   } catch (error) {

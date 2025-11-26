@@ -877,6 +877,40 @@ export interface UploadAiLogResponse {
 }
 
 /**
+ * 获取成交记录请求参数
+ */
+export interface GetTradesParams {
+  /** 交易对（必填） */
+  symbol: string;
+  /** 数据大小，范围 1-1000，默认 100 */
+  limit?: number;
+}
+
+/**
+ * 成交记录
+ */
+export interface Trade {
+  /** 成交订单 ID */
+  ticketId: string;
+  /** 成交时间 */
+  time: number;
+  /** 成交价格 */
+  price: string;
+  /** 成交数量 */
+  size: string;
+  /** 成交金额 */
+  value: string;
+  /** 交易对 */
+  symbol: string;
+  /** 是否完全匹配 */
+  isBestMatch: boolean;
+  /** 是否买方挂单 */
+  isBuyerMaker: boolean;
+  /** 合约面值 */
+  contractVal: string;
+}
+
+/**
  * 账户类型
  */
 export type AccountType = 'SPOT' | 'FUND';
@@ -1283,6 +1317,38 @@ export class WeexApiClient {
       if (axios.isAxiosError(error)) {
         throw new Error(
           `获取单个 Ticker 失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 获取成交记录（公共接口，无需签名）
+   * GET /capi/v2/market/trades
+   * Weight(IP): 5
+   * @param params - 请求参数
+   * @returns 成交记录列表
+   */
+  async getTrades(params: GetTradesParams): Promise<Trade[]> {
+    const url = `${this.baseUrl}/capi/v2/market/trades`;
+
+    try {
+      const response = await axios.get<Trade[]>(url, {
+        params: {
+          symbol: params.symbol,
+          limit: params.limit || 100,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `获取成交记录失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
         );
       }
       throw error;
