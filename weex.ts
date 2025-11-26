@@ -837,6 +837,14 @@ export interface Ticker {
 }
 
 /**
+ * 获取单个 Ticker 请求参数
+ */
+export interface GetSingleTickerParams {
+  /** 交易对（必填） */
+  symbol: string;
+}
+
+/**
  * 账户类型
  */
 export type AccountType = 'SPOT' | 'FUND';
@@ -1212,6 +1220,37 @@ export class WeexApiClient {
       if (axios.isAxiosError(error)) {
         throw new Error(
           `获取所有 Ticker 失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 获取单个交易对的 Ticker 信息（公共接口，无需签名）
+   * GET /capi/v2/market/ticker
+   * Weight(IP): 1
+   * @param params - 请求参数
+   * @returns 单个交易对的 Ticker 信息
+   */
+  async getSingleTicker(params: GetSingleTickerParams): Promise<Ticker> {
+    const url = `${this.baseUrl}/capi/v2/market/ticker`;
+
+    try {
+      const response = await axios.get<Ticker>(url, {
+        params: {
+          symbol: params.symbol,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `获取单个 Ticker 失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
         );
       }
       throw error;

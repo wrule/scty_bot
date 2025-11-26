@@ -2272,14 +2272,252 @@ async function testGetAllTickers() {
 }
 
 /**
+ * 测试获取单个 Ticker
+ */
+async function testGetSingleTicker() {
+  console.log('\n=== 测试获取单个 Ticker ===\n');
+
+  const apiKey = process.env.WEEX_API_KEY || '';
+  const secretKey = process.env.WEEX_SECRET_KEY || '';
+  const passphrase = process.env.WEEX_PASSPHRASE || '';
+
+  // 合约 API 客户端（公共接口不需要密钥）
+  const client = new WeexApiClient(
+    apiKey,
+    secretKey,
+    passphrase,
+    'https://pro-openapi.weex.tech'
+  );
+
+  try {
+    // 测试 1: 获取 BTC/USDT Ticker
+    console.log('📊 测试 1: 获取 BTC/USDT Ticker');
+    console.log('-----------------------------------\n');
+
+    const btcTicker = await client.getSingleTicker({
+      symbol: 'cmt_btcusdt',
+    });
+
+    console.log('✅ 成功获取 BTC/USDT Ticker！');
+    console.log('');
+
+    console.log('📈 BTC/USDT 详细信息:');
+    console.log('-----------------------------------');
+    console.log('交易对:', btcTicker.symbol);
+    console.log('最新价:', parseFloat(btcTicker.last).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }));
+
+    const change = parseFloat(btcTicker.priceChangePercent) * 100;
+    const changeColor = change >= 0 ? '🟢' : '🔴';
+    console.log('24h涨跌:', `${changeColor} ${change.toFixed(2)}%`);
+
+    console.log('');
+    console.log('📊 价格区间:');
+    console.log('  24h最高:', parseFloat(btcTicker.high_24h).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }));
+    console.log('  24h最低:', parseFloat(btcTicker.low_24h).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }));
+
+    const priceRange = parseFloat(btcTicker.high_24h) - parseFloat(btcTicker.low_24h);
+    const volatility = (priceRange / parseFloat(btcTicker.low_24h)) * 100;
+    console.log('  价格波动:', priceRange.toFixed(2), `(${volatility.toFixed(2)}%)`);
+
+    console.log('');
+    console.log('💰 盘口信息:');
+    console.log('  买一价:', parseFloat(btcTicker.best_bid).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }));
+    console.log('  卖一价:', parseFloat(btcTicker.best_ask).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }));
+
+    const spread = parseFloat(btcTicker.best_ask) - parseFloat(btcTicker.best_bid);
+    const spreadPercent = (spread / parseFloat(btcTicker.best_bid)) * 100;
+    console.log('  买卖价差:', spread.toFixed(2), `(${spreadPercent.toFixed(4)}%)`);
+
+    console.log('');
+    console.log('📊 成交量:');
+    console.log('  24h成交量:', parseFloat(btcTicker.volume_24h).toLocaleString('en-US', {
+      maximumFractionDigits: 0
+    }));
+    console.log('  基础货币量:', parseFloat(btcTicker.base_volume).toLocaleString('en-US', {
+      maximumFractionDigits: 2
+    }));
+
+    if (btcTicker.markPrice) {
+      console.log('');
+      console.log('🎯 合约信息:');
+      console.log('  标记价格:', parseFloat(btcTicker.markPrice).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }));
+
+      if (btcTicker.indexPrice) {
+        console.log('  指数价格:', parseFloat(btcTicker.indexPrice).toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }));
+
+        const markIndexDiff = parseFloat(btcTicker.markPrice) - parseFloat(btcTicker.indexPrice);
+        console.log('  标记-指数差:', markIndexDiff.toFixed(2));
+      }
+    }
+
+    console.log('');
+    console.log('⏰ 时间戳:', btcTicker.timestamp);
+    console.log('时间:', new Date(parseInt(btcTicker.timestamp)).toLocaleString('zh-CN', {
+      timeZone: 'Asia/Shanghai'
+    }));
+    console.log('-----------------------------------\n');
+
+    // 等待一下，避免速率限制
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // 测试 2: 获取 ETH/USDT Ticker
+    console.log('📊 测试 2: 获取 ETH/USDT Ticker');
+    console.log('-----------------------------------\n');
+
+    const ethTicker = await client.getSingleTicker({
+      symbol: 'cmt_ethusdt',
+    });
+
+    console.log('✅ 成功获取 ETH/USDT Ticker！');
+    console.log('');
+
+    const ethChange = parseFloat(ethTicker.priceChangePercent) * 100;
+    const ethChangeColor = ethChange >= 0 ? '🟢' : '🔴';
+
+    console.log('📈 ETH/USDT 简要信息:');
+    console.log('-----------------------------------');
+    console.log('最新价:', parseFloat(ethTicker.last).toFixed(2));
+    console.log('24h涨跌:', `${ethChangeColor} ${ethChange.toFixed(2)}%`);
+    console.log('24h最高:', parseFloat(ethTicker.high_24h).toFixed(2));
+    console.log('24h最低:', parseFloat(ethTicker.low_24h).toFixed(2));
+    console.log('24h成交量:', parseFloat(ethTicker.volume_24h).toLocaleString('en-US', {
+      maximumFractionDigits: 0
+    }));
+    console.log('-----------------------------------\n');
+
+    // 等待一下
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // 测试 3: 获取 SOL/USDT Ticker
+    console.log('📊 测试 3: 获取 SOL/USDT Ticker');
+    console.log('-----------------------------------\n');
+
+    const solTicker = await client.getSingleTicker({
+      symbol: 'cmt_solusdt',
+    });
+
+    console.log('✅ 成功获取 SOL/USDT Ticker！');
+    console.log('');
+
+    const solChange = parseFloat(solTicker.priceChangePercent) * 100;
+    const solChangeColor = solChange >= 0 ? '🟢' : '🔴';
+
+    console.log('📈 SOL/USDT 简要信息:');
+    console.log('-----------------------------------');
+    console.log('最新价:', parseFloat(solTicker.last).toFixed(2));
+    console.log('24h涨跌:', `${solChangeColor} ${solChange.toFixed(2)}%`);
+    console.log('24h最高:', parseFloat(solTicker.high_24h).toFixed(2));
+    console.log('24h最低:', parseFloat(solTicker.low_24h).toFixed(2));
+    console.log('买一价:', parseFloat(solTicker.best_bid).toFixed(2));
+    console.log('卖一价:', parseFloat(solTicker.best_ask).toFixed(2));
+    console.log('-----------------------------------\n');
+
+    // 测试 4: 比较多个交易对
+    console.log('📊 测试 4: 比较主流币种表现');
+    console.log('-----------------------------------\n');
+
+    const symbols = ['cmt_btcusdt', 'cmt_ethusdt', 'cmt_solusdt', 'cmt_bnbusdt'];
+    const tickers = [btcTicker, ethTicker, solTicker];
+
+    // 获取 BNB ticker
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    const bnbTicker = await client.getSingleTicker({ symbol: 'cmt_bnbusdt' });
+    tickers.push(bnbTicker);
+
+    console.log('币种\t\t最新价\t\t24h涨跌\t\t24h成交量');
+    console.log('-----------------------------------------------------------');
+
+    tickers.forEach(ticker => {
+      const coinName = ticker.symbol.replace('cmt_', '').toUpperCase().padEnd(8);
+      const price = parseFloat(ticker.last).toFixed(2).padStart(12);
+      const change = (parseFloat(ticker.priceChangePercent) * 100).toFixed(2);
+      const changeStr = (change >= '0' ? '🟢 +' : '🔴 ') + change + '%';
+      const volume = parseFloat(ticker.volume_24h).toLocaleString('en-US', {
+        maximumFractionDigits: 0
+      });
+
+      console.log(`${coinName}\t${price}\t${changeStr.padEnd(16)}\t${volume}`);
+    });
+
+    console.log('');
+
+    // 找出表现最好和最差的
+    const sortedByChange = [...tickers].sort((a, b) =>
+      parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent)
+    );
+
+    const best = sortedByChange[0];
+    const worst = sortedByChange[sortedByChange.length - 1];
+
+    console.log('🏆 表现最好:', best.symbol.replace('cmt_', '').toUpperCase(),
+      `(${(parseFloat(best.priceChangePercent) * 100).toFixed(2)}%)`);
+    console.log('📉 表现最差:', worst.symbol.replace('cmt_', '').toUpperCase(),
+      `(${(parseFloat(worst.priceChangePercent) * 100).toFixed(2)}%)`);
+
+    console.log('-----------------------------------\n');
+
+    console.log('💡 使用提示:');
+    console.log('-----------------------------------');
+    console.log('1. 接口特点:');
+    console.log('   - 权重低（1），可以频繁调用');
+    console.log('   - 只返回单个交易对数据');
+    console.log('   - 适合实时监控特定币种');
+    console.log('');
+    console.log('2. 与 getAllTickers 的区别:');
+    console.log('   - getSingleTicker: 权重1，单个交易对');
+    console.log('   - getAllTickers: 权重40，所有交易对');
+    console.log('   - 监控少量币种时用 getSingleTicker 更高效');
+    console.log('');
+    console.log('3. 应用场景:');
+    console.log('   - 实时价格监控');
+    console.log('   - 交易信号生成');
+    console.log('   - 价格预警');
+    console.log('   - 单币种深度分析');
+    console.log('');
+    console.log('4. AI 交易机器人建议:');
+    console.log('   - 使用 getSingleTicker 监控目标币种');
+    console.log('   - 定期（如每秒）获取最新价格');
+    console.log('   - 结合深度数据做决策');
+    console.log('   - 监控标记价格和指数价格的偏离');
+    console.log('-----------------------------------');
+
+    return { btcTicker, ethTicker, solTicker, bnbTicker };
+  } catch (error) {
+    console.error('❌ 获取单个 Ticker 失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 主测试函数
  */
 async function main() {
   try {
     console.log('🚀 开始测试 Weex API 客户端\n');
 
-    // 测试获取所有 Ticker
-    await testGetAllTickers();
+    // 测试获取单个 Ticker
+    await testGetSingleTicker();
 
     console.log('\n✅ 测试完成！');
   } catch (error) {
