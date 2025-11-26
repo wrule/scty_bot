@@ -369,6 +369,94 @@ export interface AccountAsset {
 }
 
 /**
+ * 业务类型
+ */
+export type BusinessType =
+  | 'deposit'                        // 存款
+  | 'withdraw'                       // 提款
+  | 'transfer_in'                    // 转入
+  | 'transfer_out'                   // 转出
+  | 'margin_move_in'                 // 保证金转入
+  | 'margin_move_out'                // 保证金转出
+  | 'position_open_long'             // 开多仓
+  | 'position_open_short'            // 开空仓
+  | 'position_close_long'            // 平多仓
+  | 'position_close_short'           // 平空仓
+  | 'position_funding'               // 资金费用
+  | 'order_fill_fee_income'          // 订单成交手续费收入
+  | 'order_liquidate_fee_income'     // 订单清算手续费收入
+  | 'start_liquidate'                // 开始清算
+  | 'finish_liquidate'               // 完成清算
+  | 'order_fix_margin_amount'        // 清算损失补偿
+  | 'tracking_follow_pay'            // 跟单支付
+  | 'tracking_system_pre_receive'    // 系统预收佣金
+  | 'tracking_follow_back'           // 跟单退款
+  | 'tracking_trader_income'         // 带单收入
+  | 'tracking_third_party_share';    // 第三方分成
+
+/**
+ * 转账原因
+ */
+export type TransferReason =
+  | 'UNKNOWN_TRANSFER_REASON'        // 未知转账原因
+  | 'USER_TRANSFER'                  // 用户手动转账
+  | 'INCREASE_CONTRACT_CASH_GIFT'    // 增加合约现金礼物
+  | 'REDUCE_CONTRACT_CASH_GIFT'      // 减少合约现金礼物
+  | 'REFUND_WXB_DISCOUNT_FEE';       // 退还 WXB 折扣费用
+
+/**
+ * 获取账单请求参数
+ */
+export interface GetBillsParams {
+  /** 币种名称 */
+  coin?: string;
+  /** 交易对 */
+  symbol?: string;
+  /** 业务类型 */
+  businessType?: BusinessType;
+  /** 开始时间（毫秒时间戳） */
+  startTime?: number;
+  /** 结束时间（毫秒时间戳） */
+  endTime?: number;
+  /** 返回记录限制（默认：20，最小：1，最大：100） */
+  limit?: number;
+}
+
+/**
+ * 账单信息
+ */
+export interface Bill {
+  /** 账单 ID */
+  billId: number;
+  /** 币种名称 */
+  coin: string;
+  /** 交易对 */
+  symbol: string;
+  /** 金额 */
+  amount: string;
+  /** 业务类型 */
+  businessType: BusinessType;
+  /** 余额 */
+  balance: string;
+  /** 成交手续费 */
+  fillFee: string;
+  /** 转账原因 */
+  transferReason: TransferReason;
+  /** 创建时间（毫秒时间戳） */
+  ctime: number;
+}
+
+/**
+ * 账单列表响应
+ */
+export interface BillsResponse {
+  /** 是否有下一页 */
+  hasNextPage: boolean;
+  /** 账单列表 */
+  items: Bill[];
+}
+
+/**
  * Weex OpenAPI Client
  * Based on the official API documentation
  */
@@ -727,6 +815,43 @@ export class WeexApiClient {
       if (axios.isAxiosError(error)) {
         throw new Error(
           `获取账户资产失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 获取合约账户账单历史（私有接口，需要签名）
+   * POST /capi/v2/account/bills
+   * Weight(IP): 2, Weight(UID): 5
+   * 需要权限：合约交易读权限
+   * @param params - 查询参数
+   * @returns 账单列表
+   */
+  async getAccountBills(params?: GetBillsParams): Promise<BillsResponse> {
+    const requestPath = '/capi/v2/account/bills';
+
+    // 构建请求体
+    const body = {
+      coin: params?.coin || '',
+      symbol: params?.symbol || '',
+      businessType: params?.businessType || '',
+      startTime: params?.startTime || null,
+      endTime: params?.endTime || null,
+      limit: params?.limit || 20,
+    };
+
+    try {
+      const response = await this.sendRequestPost<BillsResponse>(
+        requestPath,
+        body
+      );
+      return response;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `获取账单历史失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
         );
       }
       throw error;

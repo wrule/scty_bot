@@ -726,14 +726,182 @@ async function testGetAccountAssets() {
 }
 
 /**
+ * 测试获取账单历史（私有接口）
+ */
+async function testGetAccountBills() {
+  console.log('\n=== 测试获取账单历史 ===\n');
+
+  // 从环境变量读取 API 密钥
+  const apiKey = process.env.WEEX_API_KEY || '';
+  const secretKey = process.env.WEEX_SECRET_KEY || '';
+  const passphrase = process.env.WEEX_PASSPHRASE || '';
+
+  if (!apiKey || !secretKey || !passphrase) {
+    console.error('❌ 请在 .env 文件中配置 WEEX_API_KEY, WEEX_SECRET_KEY, WEEX_PASSPHRASE');
+    return;
+  }
+
+  const client = new WeexApiClient(
+    apiKey,
+    secretKey,
+    passphrase,
+    'https://pro-openapi.weex.tech'
+  );
+
+  try {
+    // 测试 1: 获取最近的账单记录
+    console.log('📋 测试 1: 获取最近 20 条账单记录');
+    console.log('-----------------------------------');
+
+    const bills = await client.getAccountBills({
+      limit: 20
+    });
+
+    console.log(`✅ 成功获取账单记录`);
+    console.log(`账单数量: ${bills.items.length} 条`);
+    console.log(`是否有下一页: ${bills.hasNextPage ? '是' : '否'}`);
+    console.log('-----------------------------------\n');
+
+    if (bills.items.length > 0) {
+      // 显示账单详情
+      console.log('📊 账单详情:');
+      console.log('-----------------------------------');
+
+      bills.items.forEach((bill, index) => {
+        const amount = parseFloat(bill.amount);
+        const balance = parseFloat(bill.balance);
+        const fillFee = parseFloat(bill.fillFee);
+        const time = new Date(bill.ctime);
+
+        // 根据业务类型显示不同的图标
+        let icon = '📝';
+        if (bill.businessType.includes('open')) icon = '📈';
+        if (bill.businessType.includes('close')) icon = '📉';
+        if (bill.businessType.includes('funding')) icon = '💰';
+        if (bill.businessType.includes('deposit')) icon = '💵';
+        if (bill.businessType.includes('withdraw')) icon = '💸';
+        if (bill.businessType.includes('transfer')) icon = '🔄';
+
+        console.log(`\n${icon} 账单 ${index + 1}:`);
+        console.log(`  账单 ID: ${bill.billId}`);
+        console.log(`  币种: ${bill.coin}`);
+        console.log(`  交易对: ${bill.symbol}`);
+        console.log(`  业务类型: ${bill.businessType}`);
+        console.log(`  金额: ${amount.toFixed(8)} ${bill.coin}`, amount >= 0 ? '📈' : '📉');
+        console.log(`  余额: ${balance.toFixed(8)} ${bill.coin}`);
+        if (fillFee !== 0) {
+          console.log(`  手续费: ${fillFee.toFixed(8)} ${bill.coin}`);
+        }
+        if (bill.transferReason !== 'UNKNOWN_TRANSFER_REASON') {
+          console.log(`  转账原因: ${bill.transferReason}`);
+        }
+        console.log(`  时间: ${time.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`);
+      });
+
+      console.log('\n-----------------------------------\n');
+
+      // 统计分析
+      console.log('📈 统计分析:');
+      console.log('-----------------------------------');
+
+      // 按业务类型分组统计
+      const typeStats: Record<string, { count: number; totalAmount: number }> = {};
+      bills.items.forEach(bill => {
+        if (!typeStats[bill.businessType]) {
+          typeStats[bill.businessType] = { count: 0, totalAmount: 0 };
+        }
+        typeStats[bill.businessType].count++;
+        typeStats[bill.businessType].totalAmount += parseFloat(bill.amount);
+      });
+
+      console.log('\n业务类型统计:');
+      Object.entries(typeStats).forEach(([type, stats]) => {
+        console.log(`  ${type}: ${stats.count} 笔, 总计 ${stats.totalAmount.toFixed(8)}`);
+      });
+
+      // 计算总收入和总支出
+      let totalIncome = 0;
+      let totalExpense = 0;
+      bills.items.forEach(bill => {
+        const amount = parseFloat(bill.amount);
+        if (amount > 0) {
+          totalIncome += amount;
+        } else {
+          totalExpense += Math.abs(amount);
+        }
+      });
+
+      console.log('\n收支统计:');
+      console.log(`  总收入: ${totalIncome.toFixed(8)} 📈`);
+      console.log(`  总支出: ${totalExpense.toFixed(8)} 📉`);
+      console.log(`  净收益: ${(totalIncome - totalExpense).toFixed(8)}`, (totalIncome - totalExpense) >= 0 ? '📈' : '📉');
+
+      console.log('-----------------------------------\n');
+
+      // 测试 2: 获取特定业务类型的账单
+      console.log('📋 测试 2: 获取资金费用相关账单');
+      console.log('-----------------------------------');
+
+      const fundingBills = await client.getAccountBills({
+        businessType: 'position_funding',
+        limit: 10
+      });
+
+      console.log(`✅ 成功获取资金费用账单: ${fundingBills.items.length} 条`);
+
+      if (fundingBills.items.length > 0) {
+        let totalFunding = 0;
+        fundingBills.items.forEach(bill => {
+          totalFunding += parseFloat(bill.amount);
+        });
+        console.log(`总资金费用: ${totalFunding.toFixed(8)}`, totalFunding >= 0 ? '📈 (收入)' : '📉 (支出)');
+      }
+
+      console.log('-----------------------------------\n');
+
+      // 测试 3: 获取指定时间范围的账单
+      console.log('📋 测试 3: 获取最近 24 小时的账单');
+      console.log('-----------------------------------');
+
+      const now = Date.now();
+      const oneDayAgo = now - 24 * 60 * 60 * 1000;
+
+      const recentBills = await client.getAccountBills({
+        startTime: oneDayAgo,
+        endTime: now,
+        limit: 50
+      });
+
+      console.log(`✅ 成功获取最近 24 小时账单: ${recentBills.items.length} 条`);
+
+      if (recentBills.items.length > 0) {
+        const firstTime = new Date(recentBills.items[recentBills.items.length - 1].ctime);
+        const lastTime = new Date(recentBills.items[0].ctime);
+        console.log(`时间范围: ${firstTime.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })} 至 ${lastTime.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`);
+      }
+
+      console.log('-----------------------------------');
+
+    } else {
+      console.log('暂无账单记录');
+    }
+
+    return bills;
+  } catch (error) {
+    console.error('❌ 获取账单历史失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 主测试函数
  */
 async function main() {
   try {
     console.log('🚀 开始测试 Weex API 客户端\n');
 
-    // 测试获取账户资产
-    await testGetAccountAssets();
+    // 测试获取账单历史
+    await testGetAccountBills();
 
     console.log('\n✅ 测试完成！');
   } catch (error) {
