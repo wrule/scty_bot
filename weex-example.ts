@@ -623,14 +623,117 @@ async function testGetAccount() {
 }
 
 /**
+ * 测试获取账户资产（私有接口）
+ */
+async function testGetAccountAssets() {
+  console.log('\n=== 测试获取账户资产 ===\n');
+
+  // 从环境变量读取 API 密钥
+  const apiKey = process.env.WEEX_API_KEY || '';
+  const secretKey = process.env.WEEX_SECRET_KEY || '';
+  const passphrase = process.env.WEEX_PASSPHRASE || '';
+
+  if (!apiKey || !secretKey || !passphrase) {
+    console.error('❌ 请在 .env 文件中配置 WEEX_API_KEY, WEEX_SECRET_KEY, WEEX_PASSPHRASE');
+    return;
+  }
+
+  const client = new WeexApiClient(
+    apiKey,
+    secretKey,
+    passphrase,
+    'https://pro-openapi.weex.tech'
+  );
+
+  try {
+    console.log('💰 正在获取账户资产信息...');
+    console.log('-----------------------------------');
+
+    const assets = await client.getAccountAssets();
+
+    console.log(`✅ 成功获取 ${assets.length} 个币种的资产信息\n`);
+
+    if (assets.length > 0) {
+      // 计算总资产价值（以 USDT 计价）
+      let totalEquityUSDT = 0;
+      let totalAvailableUSDT = 0;
+      let totalUnrealizedPnl = 0;
+
+      console.log('📊 资产详情:');
+      console.log('-----------------------------------');
+
+      assets.forEach((asset, index) => {
+        const available = parseFloat(asset.available);
+        const frozen = parseFloat(asset.frozen);
+        const equity = parseFloat(asset.equity);
+        const unrealizePnl = parseFloat(asset.unrealizePnl);
+
+        console.log(`\n${index + 1}. ${asset.coinName} (ID: ${asset.coinId})`);
+        console.log('   ├─ 可用资产:', available.toFixed(8));
+        console.log('   ├─ 冻结资产:', frozen.toFixed(8));
+        console.log('   ├─ 总资产:', equity.toFixed(8));
+        console.log('   └─ 未实现盈亏:', unrealizePnl.toFixed(8), unrealizePnl >= 0 ? '📈' : '📉');
+
+        // 如果是 USDT，累加到总计
+        if (asset.coinName === 'USDT') {
+          totalEquityUSDT += equity;
+          totalAvailableUSDT += available;
+          totalUnrealizedPnl += unrealizePnl;
+        }
+      });
+
+      console.log('\n-----------------------------------');
+      console.log('💎 资产汇总 (USDT):');
+      console.log('-----------------------------------');
+      console.log('总资产:', totalEquityUSDT.toFixed(8), 'USDT');
+      console.log('可用资产:', totalAvailableUSDT.toFixed(8), 'USDT');
+      console.log('未实现盈亏:', totalUnrealizedPnl.toFixed(8), 'USDT', totalUnrealizedPnl >= 0 ? '📈' : '📉');
+
+      // 计算资产利用率
+      if (totalEquityUSDT > 0) {
+        const utilizationRate = ((totalEquityUSDT - totalAvailableUSDT) / totalEquityUSDT * 100);
+        console.log('资产利用率:', utilizationRate.toFixed(2) + '%');
+      }
+
+      // 显示盈亏比例
+      if (totalEquityUSDT > 0) {
+        const pnlRate = (totalUnrealizedPnl / totalEquityUSDT * 100);
+        console.log('盈亏比例:', pnlRate.toFixed(2) + '%', pnlRate >= 0 ? '📈' : '📉');
+      }
+
+      console.log('-----------------------------------');
+
+      // 显示非零资产
+      const nonZeroAssets = assets.filter(a => parseFloat(a.equity) > 0);
+      if (nonZeroAssets.length > 0) {
+        console.log('\n💼 持有币种:');
+        console.log('-----------------------------------');
+        nonZeroAssets.forEach(asset => {
+          console.log(`${asset.coinName}: ${parseFloat(asset.equity).toFixed(8)}`);
+        });
+        console.log('-----------------------------------');
+      }
+
+    } else {
+      console.log('暂无资产信息');
+    }
+
+    return assets;
+  } catch (error) {
+    console.error('❌ 获取账户资产失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 主测试函数
  */
 async function main() {
   try {
     console.log('🚀 开始测试 Weex API 客户端\n');
 
-    // 测试获取单个账户信息
-    await testGetAccount();
+    // 测试获取账户资产
+    await testGetAccountAssets();
 
     console.log('\n✅ 测试完成！');
   } catch (error) {

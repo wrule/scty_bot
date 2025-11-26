@@ -351,6 +351,24 @@ export interface AccountListResponse {
 }
 
 /**
+ * 账户资产信息
+ */
+export interface AccountAsset {
+  /** 币种 ID */
+  coinId: number;
+  /** 币种名称 */
+  coinName: string;
+  /** 可用资产 */
+  available: string;
+  /** 冻结资产 */
+  frozen: string;
+  /** 总资产 */
+  equity: string;
+  /** 未实现盈亏 */
+  unrealizePnl: string;
+}
+
+/**
  * Weex OpenAPI Client
  * Based on the official API documentation
  */
@@ -682,6 +700,33 @@ export class WeexApiClient {
       if (axios.isAxiosError(error)) {
         throw new Error(
           `获取账户信息失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 获取账户资产（私有接口，需要签名）
+   * GET /capi/v2/account/assets
+   * Weight(IP): 2, Weight(UID): 2
+   * 需要权限：合约交易读权限
+   * @returns 账户资产列表
+   */
+  async getAccountAssets(): Promise<AccountAsset[]> {
+    const requestPath = '/capi/v2/account/assets';
+    const queryString = '';
+
+    try {
+      const response = await this.sendRequestGet<AccountAsset[]>(
+        requestPath,
+        queryString
+      );
+      return response;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(
+          `获取账户资产失败: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
         );
       }
       throw error;
