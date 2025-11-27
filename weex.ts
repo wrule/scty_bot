@@ -2207,6 +2207,101 @@ export class WeexApiClient {
       candles
     };
   }
+
+  /**
+   * AI 专用：获取订单簿深度（精简版）
+   * 只返回 AI 策略分析所需的关键字段
+   * @param symbol - 交易对，例如 'cmt_btcusdt'
+   * @param depth - 深度档位，默认 10（只取前10档）
+   */
+  async getOrderBookForAI(
+    symbol: string,
+    depth: number = 10
+  ): Promise<{
+    symbol: string;
+    timestamp: string;
+    bestBid: string;
+    bestAsk: string;
+    spread: string;
+    spreadPercent: string;
+    bidDepth: Array<{
+      price: string;
+      amount: string;
+      total: string;
+    }>;
+    askDepth: Array<{
+      price: string;
+      amount: string;
+      total: string;
+    }>;
+    totalBidVolume: string;
+    totalAskVolume: string;
+    bidAskRatio: string;
+  }> {
+    const orderBook = await this.getOrderBookDepth({
+      symbol,
+      limit: 200  // 获取完整深度，然后取前N档
+    });
+
+    if (!orderBook.bids || orderBook.bids.length === 0 ||
+        !orderBook.asks || orderBook.asks.length === 0) {
+      throw new Error('No order book data available');
+    }
+
+    // 取前N档
+    const topBids = orderBook.bids.slice(0, depth);
+    const topAsks = orderBook.asks.slice(0, depth);
+
+    // 最优买卖价
+    const bestBid = topBids[0][0];
+    const bestAsk = topAsks[0][0];
+
+    // 计算价差
+    const spread = (parseFloat(bestAsk) - parseFloat(bestBid)).toFixed(2);
+    const spreadPercent = ((parseFloat(spread) / parseFloat(bestBid)) * 100).toFixed(4);
+
+    // 计算累计数量
+    let bidCumulative = 0;
+    const bidDepth = topBids.map(([price, amount]) => {
+      bidCumulative += parseFloat(amount);
+      return {
+        price,
+        amount,
+        total: bidCumulative.toFixed(4)
+      };
+    });
+
+    let askCumulative = 0;
+    const askDepth = topAsks.map(([price, amount]) => {
+      askCumulative += parseFloat(amount);
+      return {
+        price,
+        amount,
+        total: askCumulative.toFixed(4)
+      };
+    });
+
+    // 计算总买卖量
+    const totalBidVolume = bidCumulative.toFixed(4);
+    const totalAskVolume = askCumulative.toFixed(4);
+
+    // 买卖比
+    const bidAskRatio = (bidCumulative / askCumulative).toFixed(4);
+
+    return {
+      symbol,
+      timestamp: new Date(parseInt(orderBook.timestamp)).toISOString(),
+      bestBid,
+      bestAsk,
+      spread,
+      spreadPercent,
+      bidDepth,
+      askDepth,
+      totalBidVolume,
+      totalAskVolume,
+      bidAskRatio
+    };
+  }
 }
 
 /**
