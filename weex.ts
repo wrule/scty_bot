@@ -2072,6 +2072,7 @@ export class WeexApiClient {
     positions?: Array<{
       side: 'LONG' | 'SHORT';
       size: string;
+      entryPrice: string;
       leverage: string;
       unrealizedPnl: string;
       pnlPercent: string;
@@ -2095,11 +2096,16 @@ export class WeexApiClient {
     const simplifiedPositions = positions.map(position => {
       const pnl = parseFloat(position.unrealizePnl);
       const openValue = parseFloat(position.open_value);
+      const size = parseFloat(position.size);
       const pnlPercent = ((pnl / openValue) * 100).toFixed(4);
+
+      // 计算平均开仓价格 = 开仓价值 / 持仓数量
+      const entryPrice = size > 0 ? (openValue / size).toFixed(2) : '0.00';
 
       return {
         side: position.side === 'LONG' ? 'LONG' as const : 'SHORT' as const,
         size: position.size,
+        entryPrice: entryPrice,
         leverage: position.leverage,
         unrealizedPnl: position.unrealizePnl,
         pnlPercent: pnlPercent
@@ -2804,6 +2810,7 @@ export class WeexApiClient {
     // 4. 当前持仓
     lines.push('💼 四、当前持仓');
     lines.push('-'.repeat(80));
+
     if (context.currentPosition.hasPosition && context.currentPosition.positions) {
       lines.push(`持仓状态: 有持仓 (${context.currentPosition.positions.length}个)`);
       lines.push('');
@@ -2812,6 +2819,8 @@ export class WeexApiClient {
         lines.push(`持仓 ${index + 1}:`);
         lines.push(`  方向: ${pos.side}`);
         lines.push(`  数量: ${pos.size}`);
+        lines.push(`  持仓价格: ${pos.entryPrice} USDT`);
+        lines.push(`  当前价格: ${context.marketData.currentPrice} USDT`);
         lines.push(`  杠杆: ${pos.leverage}x`);
         lines.push(`  未实现盈亏: ${pos.unrealizedPnl} USDT (${pos.pnlPercent}%)`);
         lines.push('');
