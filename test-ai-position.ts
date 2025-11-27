@@ -30,7 +30,7 @@ async function testAIPosition() {
   console.log('🤖 AI 精简数据 (getPositionForAI):');
   console.log('-----------------------------------\n');
 
-  const aiPosition = await client.getPositionForAI();
+  const aiPosition = await client.getPositionForAI('cmt_btcusdt');
 
   console.log('AI 精简对象:');
   console.log(JSON.stringify(aiPosition, null, 2));
@@ -61,6 +61,7 @@ async function testAIPosition() {
 
   if (aiPosition && aiPosition.hasPosition && aiPosition.positions) {
     let contextMessage = `Current Positions Summary:
+- Symbol: ${aiPosition.symbol}
 - Total Positions: ${aiPosition.positions.length}
 - Total PnL: $${aiPosition.totalPnl}
 - Net Position: ${aiPosition.netPosition?.side} ${aiPosition.netPosition?.size} BTC

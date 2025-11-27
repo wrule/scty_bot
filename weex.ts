@@ -2064,8 +2064,10 @@ export class WeexApiClient {
   /**
    * AI 专用：获取当前持仓信息（精简版）
    * 只返回 AI 策略分析所需的关键字段
+   * @param symbol - 交易对，例如 'cmt_btcusdt'
    */
-  async getPositionForAI(): Promise<{
+  async getPositionForAI(symbol: string): Promise<{
+    symbol: string;
     hasPosition: boolean;
     positions?: Array<{
       side: 'LONG' | 'SHORT';
@@ -2080,10 +2082,11 @@ export class WeexApiClient {
       size: string;
     };
   }> {
-    const positions = await this.getSinglePosition({ symbol: 'cmt_btcusdt' });
+    const positions = await this.getSinglePosition({ symbol });
 
     if (!positions || positions.length === 0) {
       return {
+        symbol,
         hasPosition: false
       };
     }
@@ -2118,6 +2121,7 @@ export class WeexApiClient {
     const netSide = longSize > shortSize ? 'LONG' : (shortSize > longSize ? 'SHORT' : 'NEUTRAL');
 
     return {
+      symbol,
       hasPosition: true,
       positions: simplifiedPositions,
       totalPnl: totalPnl,
