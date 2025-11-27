@@ -199,9 +199,11 @@ async function generateTradingSignal(marketReport: string): Promise<{ signal: AI
 }
 
 /**
- * 执行交易信号
+ * 执行交易信号并上报 AI 日志
+ * @param signal - AI 交易信号
+ * @param marketReport - 市场报告（作为 AI 输入）
  */
-async function executeTradingSignal(signal: AITradingSignal): Promise<string> {
+async function executeTradingSignal(signal: AITradingSignal, marketReport: string): Promise<string> {
   const results: string[] = [];
 
   results.push('='.repeat(80));
@@ -243,6 +245,7 @@ async function executeTradingSignal(signal: AITradingSignal): Promise<string> {
       results.push('');
 
       try {
+        // 执行订单
         const result = await weexClient.placeOrder({
           symbol: 'cmt_btcusdt',
           client_oid: `ai_${order.type}_${Date.now()}`,
@@ -259,9 +262,82 @@ async function executeTradingSignal(signal: AITradingSignal): Promise<string> {
         results.push(`  订单 ID: ${result.client_oid}`);
         results.push('');
 
+        // 上报 AI 日志
+        try {
+          const aiLogResponse = await weexClient.uploadAiLog({
+            orderId: null, // 如果有订单 ID 可以传入
+            stage: 'production',
+            model: 'deepseek/deepseek-r1',
+            input: {
+              marketReport: marketReport.substring(0, 1000), // 截取前 1000 字符避免过长
+              timestamp: new Date().toISOString(),
+              symbol: 'cmt_btcusdt'
+            },
+            output: {
+              signal: signal.signal,
+              analysis: signal.analysis,
+              order: {
+                type: order.typeDescription,
+                size: order.size,
+                priceType: order.priceType,
+                price: order.price
+              },
+              executionResult: {
+                success: true,
+                orderId: result.client_oid
+              }
+            },
+            explanation: `AI 分析: ${signal.signal.reasoning}. 订单理由: ${order.reasoning}`
+          });
+
+          if (aiLogResponse.code === '00000') {
+            results.push(`  📤 AI 日志上报成功`);
+          } else {
+            results.push(`  ⚠️  AI 日志上报失败: ${aiLogResponse.msg}`);
+          }
+        } catch (logError) {
+          results.push(`  ⚠️  AI 日志上报失败: ${logError instanceof Error ? logError.message : 'Unknown error'}`);
+        }
+
+        results.push('');
+
       } catch (error) {
         results.push(`  ❌ 订单执行失败: ${error instanceof Error ? error.message : 'Unknown error'}`);
         results.push('');
+
+        // 即使订单失败也上报 AI 日志
+        try {
+          await weexClient.uploadAiLog({
+            orderId: null,
+            stage: 'production',
+            model: 'deepseek/deepseek-r1',
+            input: {
+              marketReport: marketReport.substring(0, 1000),
+              timestamp: new Date().toISOString(),
+              symbol: 'cmt_btcusdt'
+            },
+            output: {
+              signal: signal.signal,
+              analysis: signal.analysis,
+              order: {
+                type: order.typeDescription,
+                size: order.size,
+                priceType: order.priceType,
+                price: order.price
+              },
+              executionResult: {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+              }
+            },
+            explanation: `AI 分析: ${signal.signal.reasoning}. 订单执行失败: ${error instanceof Error ? error.message : 'Unknown error'}`
+          });
+
+          results.push(`  📤 AI 日志已上报（订单失败）`);
+          results.push('');
+        } catch (logError) {
+          // 忽略日志上报错误
+        }
       }
     }
   } else {
@@ -269,6 +345,36 @@ async function executeTradingSignal(signal: AITradingSignal): Promise<string> {
     results.push('💤 观望 - 无需执行订单');
     results.push('='.repeat(80));
     results.push('');
+
+    // 即使是观望也上报 AI 日志
+    try {
+      await weexClient.uploadAiLog({
+        orderId: null,
+        stage: 'production',
+        model: 'deepseek/deepseek-r1',
+        input: {
+          marketReport: marketReport.substring(0, 1000),
+          timestamp: new Date().toISOString(),
+          symbol: 'cmt_btcusdt'
+        },
+        output: {
+          signal: signal.signal,
+          analysis: signal.analysis,
+          action: 'HOLD',
+          executionResult: {
+            success: true,
+            message: 'No order executed - HOLD signal'
+          }
+        },
+        explanation: `AI 建议观望: ${signal.signal.reasoning}`
+      });
+
+      results.push('📤 AI 日志已上报（观望）');
+      results.push('');
+    } catch (logError) {
+      results.push(`⚠️  AI 日志上报失败: ${logError instanceof Error ? logError.message : 'Unknown error'}`);
+      results.push('');
+    }
   }
 
   return results.join('\n');
@@ -358,7 +464,7 @@ async function runTradingCycle(dryRun: boolean = false): Promise<void> {
         console.log('\n' + analysisResult);
       } else {
         // 正常运行：执行交易
-        const executionResult = await executeTradingSignal(signal);
+        const executionResult = await executeTradingSignal(signal, marketReport);
 
         // 保存执行结果
         await saveToFolder(folderPath, '3-execution-result.txt', executionResult);
