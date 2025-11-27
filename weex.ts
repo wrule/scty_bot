@@ -2131,6 +2131,82 @@ export class WeexApiClient {
       }
     };
   }
+
+  /**
+   * AI 专用：获取K线数据（精简版）
+   * 只返回 AI 策略分析所需的关键字段
+   * @param symbol - 交易对，例如 'cmt_btcusdt'
+   * @param granularity - K线周期，例如 '1m', '5m', '15m', '1h', '4h', '1d'
+   * @param limit - 返回数量，默认 100
+   */
+  async getKlineForAI(
+    symbol: string,
+    granularity: CandlestickGranularity,
+    limit: number = 100
+  ): Promise<{
+    symbol: string;
+    granularity: string;
+    count: number;
+    latestPrice: string;
+    priceChange24h: string;
+    priceChangePercent24h: string;
+    high24h: string;
+    low24h: string;
+    candles: Array<{
+      time: string;
+      open: string;
+      high: string;
+      low: string;
+      close: string;
+      volume: string;
+    }>;
+  }> {
+    const rawData = await this.getCandles({
+      symbol,
+      granularity,
+      limit,
+      priceType: 'LAST'
+    });
+
+    if (!rawData || rawData.length === 0) {
+      throw new Error('No kline data available');
+    }
+
+    // 转换为精简格式
+    const candles = rawData.map(candle => ({
+      time: new Date(parseInt(candle[0])).toISOString(),
+      open: candle[1],
+      high: candle[2],
+      low: candle[3],
+      close: candle[4],
+      volume: candle[5]
+    }));
+
+    // 计算统计数据
+    const latestCandle = rawData[rawData.length - 1];
+    const firstCandle = rawData[0];
+    const latestPrice = latestCandle[4]; // 最新收盘价
+    const price24hAgo = firstCandle[1]; // 24小时前开盘价
+
+    const priceChange = (parseFloat(latestPrice) - parseFloat(price24hAgo)).toFixed(2);
+    const priceChangePercent = ((parseFloat(priceChange) / parseFloat(price24hAgo)) * 100).toFixed(2);
+
+    // 计算24小时最高最低
+    const high24h = Math.max(...rawData.map(c => parseFloat(c[2]))).toFixed(2);
+    const low24h = Math.min(...rawData.map(c => parseFloat(c[3]))).toFixed(2);
+
+    return {
+      symbol,
+      granularity,
+      count: candles.length,
+      latestPrice,
+      priceChange24h: priceChange,
+      priceChangePercent24h: priceChangePercent,
+      high24h,
+      low24h,
+      candles
+    };
+  }
 }
 
 /**
