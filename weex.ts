@@ -2591,6 +2591,235 @@ export class WeexApiClient {
       }
     };
   }
+
+  /**
+   * AI 专用：获取完整的交易上下文报告
+   * 整合账单历史、市场数据、账户风险和持仓信息
+   * 这是为 AI 决策提供的完整上下文数据
+   * @param symbol - 交易对，例如 'cmt_btcusdt'
+   * @param billsLimit - 账单历史记录数量，默认 50
+   * @param saveToFile - 是否保存到文件，默认 true
+   * @param filePath - 保存的文件路径，默认 'ai-trading-context.json'
+   */
+  async getAITradingContext(
+    symbol: string,
+    billsLimit: number = 50,
+    saveToFile: boolean = true,
+    filePath: string = 'ai-trading-context.json'
+  ) {
+    console.log(`\n🤖 正在获取 ${symbol} 的完整 AI 交易上下文...`);
+    console.log('-----------------------------------');
+
+    // 并行获取所有数据以提高性能
+    const startTime = Date.now();
+
+    console.log('📊 1/4 获取账单历史...');
+    const billsPromise = this.getBillsForAI(symbol, billsLimit);
+
+    console.log('📈 2/4 获取市场数据...');
+    const marketDataPromise = this.getMarketDataForAI(symbol);
+
+    console.log('⚠️  3/4 获取账户风险信息...');
+    const riskPromise = this.getAccountRiskForAI(symbol);
+
+    console.log('💼 4/4 获取持仓信息...');
+    const positionPromise = this.getPositionForAI(symbol);
+
+    // 等待所有数据获取完成
+    const [bills, marketData, accountRisk, position] = await Promise.all([
+      billsPromise,
+      marketDataPromise,
+      riskPromise,
+      positionPromise
+    ]);
+
+    const endTime = Date.now();
+    const duration = ((endTime - startTime) / 1000).toFixed(2);
+
+    console.log(`✅ 所有数据获取完成 (耗时: ${duration}秒)`);
+    console.log('-----------------------------------\n');
+
+    // 构建完整的上下文报告
+    const context = {
+      // 元数据
+      metadata: {
+        symbol,
+        timestamp: new Date().toISOString(),
+        dataFetchDuration: `${duration}s`
+      },
+
+      // 1. 账单历史（交易历史和盈亏统计）
+      tradingHistory: bills,
+
+      // 2. 市场数据（K线和订单簿）
+      marketData,
+
+      // 3. 账户风险（余额、杠杆、保证金、风险等级）
+      accountRisk,
+
+      // 4. 当前持仓（持仓详情和盈亏）
+      currentPosition: position
+    };
+
+    // 计算上下文数据大小
+    const contextSize = JSON.stringify(context).length;
+    const contextSizeKB = (contextSize / 1024).toFixed(2);
+
+    console.log(`📦 上下文数据大小: ${contextSize} bytes (${contextSizeKB} KB)`);
+
+    // 保存到文件
+    if (saveToFile) {
+      const fs = await import('fs/promises');
+      const jsonContent = JSON.stringify(context, null, 2);
+      await fs.writeFile(filePath, jsonContent, 'utf-8');
+      console.log(`💾 数据已保存到: ${filePath}`);
+    }
+
+    return context;
+  }
+
+  /**
+   * AI 专用：获取格式化的交易上下文文本
+   * 将完整的交易上下文转换为易读的文本格式，适合直接传递给 AI
+   * @param symbol - 交易对，例如 'cmt_btcusdt'
+   * @param billsLimit - 账单历史记录数量，默认 50
+   * @param saveToFile - 是否保存到文件，默认 true
+   * @param filePath - 保存的文件路径，默认 'ai-trading-context.txt'
+   */
+  async getAITradingContextText(
+    symbol: string,
+    billsLimit: number = 50,
+    saveToFile: boolean = true,
+    filePath: string = 'ai-trading-context.txt'
+  ): Promise<string> {
+    const context = await this.getAITradingContext(symbol, billsLimit, false); // 不保存JSON，只保存文本
+
+    // 构建格式化的文本报告
+    const lines: string[] = [];
+
+    lines.push('='.repeat(80));
+    lines.push(`AI 交易上下文报告 - ${context.metadata.symbol}`);
+    lines.push(`生成时间: ${context.metadata.timestamp}`);
+    lines.push(`数据获取耗时: ${context.metadata.dataFetchDuration}`);
+    lines.push('='.repeat(80));
+    lines.push('');
+
+    // 1. 交易历史摘要
+    lines.push('📊 一、交易历史摘要');
+    lines.push('-'.repeat(80));
+    lines.push(`总记录数: ${context.tradingHistory.totalRecords}`);
+    lines.push('');
+    lines.push('盈亏统计:');
+    lines.push(`  总收入: ${context.tradingHistory.summary.totalIncome} USDT`);
+    lines.push(`  总支出: ${context.tradingHistory.summary.totalExpense} USDT`);
+    lines.push(`  净盈亏: ${context.tradingHistory.summary.netPnL} USDT`);
+    lines.push(`  总手续费: ${context.tradingHistory.summary.totalFees} USDT`);
+    lines.push('');
+    lines.push('交易统计:');
+    lines.push(`  开仓次数: ${context.tradingHistory.summary.openPositions}`);
+    lines.push(`  平仓次数: ${context.tradingHistory.summary.closePositions}`);
+    lines.push(`  资金费用次数: ${context.tradingHistory.summary.fundingFees}`);
+    lines.push('');
+
+    // 2. 市场数据
+    lines.push('📈 二、市场数据');
+    lines.push('-'.repeat(80));
+    lines.push(`当前价格: ${context.marketData.currentPrice} USDT`);
+    lines.push('');
+
+    // K线数据摘要
+    lines.push('K线数据:');
+    const kline15m = context.marketData.klines['15m'];
+    const kline1h = context.marketData.klines['1h'];
+    const kline4h = context.marketData.klines['4h'];
+
+    lines.push(`  15分钟: 最新价 ${kline15m.latestPrice}, 24h涨跌 ${kline15m.priceChangePercent24h}%`);
+    lines.push(`  1小时:  最新价 ${kline1h.latestPrice}, 24h涨跌 ${kline1h.priceChangePercent24h}%`);
+    lines.push(`  4小时:  最新价 ${kline4h.latestPrice}, 24h涨跌 ${kline4h.priceChangePercent24h}%`);
+    lines.push('');
+
+    // 订单簿数据
+    lines.push('订单簿:');
+    lines.push(`  最优买价: ${context.marketData.orderBook.bestBid} USDT`);
+    lines.push(`  最优卖价: ${context.marketData.orderBook.bestAsk} USDT`);
+    lines.push(`  价差: ${context.marketData.orderBook.spread} USDT (${context.marketData.orderBook.spreadPercent}%)`);
+    lines.push(`  买卖比: ${context.marketData.orderBook.bidAskRatio}`);
+    lines.push('');
+
+    // 3. 账户风险
+    lines.push('⚠️  三、账户风险');
+    lines.push('-'.repeat(80));
+    lines.push('余额:');
+    lines.push(`  总余额: ${context.accountRisk.balance.total} USDT`);
+    lines.push(`  可用: ${context.accountRisk.balance.available} USDT`);
+    lines.push(`  冻结: ${context.accountRisk.balance.frozen} USDT`);
+    lines.push('');
+    lines.push('杠杆:');
+    lines.push(`  当前杠杆: ${context.accountRisk.leverage.current}x`);
+    lines.push(`  保证金模式: ${context.accountRisk.leverage.mode}`);
+    lines.push('');
+    lines.push('保证金:');
+    lines.push(`  已使用: ${context.accountRisk.margin.used} USDT`);
+    lines.push(`  可用: ${context.accountRisk.margin.available} USDT`);
+    lines.push(`  使用率: ${context.accountRisk.margin.ratio}%`);
+    lines.push('');
+    lines.push('风险评估:');
+    lines.push(`  风险等级: ${context.accountRisk.risk.level}`);
+    lines.push(`  实际杠杆率: ${context.accountRisk.risk.leverageRatio}x`);
+    lines.push(`  保证金比率: ${context.accountRisk.risk.marginRatio}%`);
+    lines.push('');
+    lines.push('持仓统计:');
+    lines.push(`  持仓数量: ${context.accountRisk.positions.count}`);
+    lines.push(`  持仓总价值: ${context.accountRisk.positions.totalValue} USDT`);
+    lines.push(`  未实现盈亏: ${context.accountRisk.positions.totalUnrealizedPnl} USDT`);
+    lines.push('');
+
+    // 4. 当前持仓
+    lines.push('💼 四、当前持仓');
+    lines.push('-'.repeat(80));
+    if (context.currentPosition.hasPosition && context.currentPosition.positions) {
+      lines.push(`持仓状态: 有持仓 (${context.currentPosition.positions.length}个)`);
+      lines.push('');
+
+      context.currentPosition.positions.forEach((pos, index) => {
+        lines.push(`持仓 ${index + 1}:`);
+        lines.push(`  方向: ${pos.side}`);
+        lines.push(`  数量: ${pos.size}`);
+        lines.push(`  杠杆: ${pos.leverage}x`);
+        lines.push(`  未实现盈亏: ${pos.unrealizedPnl} USDT (${pos.pnlPercent}%)`);
+        lines.push('');
+      });
+
+      if (context.currentPosition.netPosition) {
+        lines.push('净持仓:');
+        lines.push(`  方向: ${context.currentPosition.netPosition.side}`);
+        lines.push(`  数量: ${context.currentPosition.netPosition.size}`);
+        lines.push('');
+      }
+
+      if (context.currentPosition.totalPnl) {
+        lines.push(`总盈亏: ${context.currentPosition.totalPnl} USDT`);
+      }
+    } else {
+      lines.push('持仓状态: 无持仓');
+    }
+    lines.push('');
+
+    lines.push('='.repeat(80));
+    lines.push('报告结束');
+    lines.push('='.repeat(80));
+
+    const textReport = lines.join('\n');
+
+    // 保存到文件
+    if (saveToFile) {
+      const fs = await import('fs/promises');
+      await fs.writeFile(filePath, textReport, 'utf-8');
+      console.log(`💾 文本报告已保存到: ${filePath}`);
+    }
+
+    return textReport;
+  }
 }
 
 /**
