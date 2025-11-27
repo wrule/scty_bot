@@ -23,7 +23,7 @@ const weexClient = new WeexApiClient(
 );
 
 /**
- * 等待到下一个 5 分钟 K 线结束时刻
+ * 等待到下一个 5 分钟 K 线结束时刻（带实时倒计时）
  */
 async function waitFor5MinuteKlineClose(): Promise<void> {
   const now = dayjs();
@@ -38,13 +38,41 @@ async function waitFor5MinuteKlineClose(): Promise<void> {
     targetTime = now.add(1, 'hour').minute(0).second(0).millisecond(0);
   }
 
-  const waitMs = targetTime.diff(now);
+  const totalWaitMs = targetTime.diff(now);
 
   console.log(`⏰ 当前时间: ${now.format('YYYY-MM-DD HH:mm:ss')}`);
   console.log(`⏰ 下一个 5 分钟 K 线结束时间: ${targetTime.format('YYYY-MM-DD HH:mm:ss')}`);
-  console.log(`⏰ 等待 ${(waitMs / 1000).toFixed(0)} 秒...`);
+  console.log(`⏰ 总等待时间: ${(totalWaitMs / 1000).toFixed(0)} 秒\n`);
 
-  await new Promise(resolve => setTimeout(resolve, waitMs));
+  // 实时倒计时
+  return new Promise((resolve) => {
+    const startTime = Date.now();
+    const endTime = startTime + totalWaitMs;
+
+    const updateCountdown = () => {
+      const remaining = endTime - Date.now();
+
+      if (remaining <= 0) {
+        process.stdout.write('\r⏰ 倒计时: 0 秒     \n');
+        resolve();
+        return;
+      }
+
+      const seconds = Math.ceil(remaining / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+
+      if (minutes > 0) {
+        process.stdout.write(`\r⏰ 倒计时: ${minutes} 分 ${secs} 秒     `);
+      } else {
+        process.stdout.write(`\r⏰ 倒计时: ${secs} 秒     `);
+      }
+
+      setTimeout(updateCountdown, 1000);
+    };
+
+    updateCountdown();
+  });
 }
 
 /**
@@ -118,8 +146,9 @@ function robustJsonParse(text: string): any {
 
 /**
  * 调用 AI 生成交易信号
+ * @returns 返回 { signal: 解析后的信号, rawResponse: 原始响应 }
  */
-async function generateTradingSignal(marketReport: string): Promise<AITradingSignal> {
+async function generateTradingSignal(marketReport: string): Promise<{ signal: AITradingSignal; rawResponse: string }> {
   console.log('\n🤖 正在调用 AI 分析市场数据...');
 
   try {
@@ -158,7 +187,10 @@ async function generateTradingSignal(marketReport: string): Promise<AITradingSig
       throw new Error('AI 返回的交易信号格式无效');
     }
 
-    return parsedJson as AITradingSignal;
+    return {
+      signal: parsedJson as AITradingSignal,
+      rawResponse: aiResponse
+    };
 
   } catch (error) {
     console.error('❌ AI 调用失败:', error);
@@ -244,11 +276,12 @@ async function executeTradingSignal(signal: AITradingSignal): Promise<string> {
 
 /**
  * 执行一次完整的交易周期
+ * @param dryRun - 是否为模拟运行（只分析不执行交易）
  */
-async function runTradingCycle(): Promise<void> {
+async function runTradingCycle(dryRun: boolean = false): Promise<void> {
   const timestamp = dayjs().format('YYYY-MM-DD HH:mm:ss');
   console.log('\n' + '='.repeat(80));
-  console.log(`🚀 开始交易周期: ${timestamp}`);
+  console.log(`🚀 开始交易周期: ${timestamp}${dryRun ? ' [仅分析模式]' : ''}`);
   console.log('='.repeat(80));
 
   try {
@@ -264,15 +297,19 @@ async function runTradingCycle(): Promise<void> {
     await saveToFolder(folderPath, '1-market-report.txt', marketReport);
 
     // 3. 调用 AI 生成交易信号
-    let aiRawResponse = '';
     let signal: AITradingSignal | null = null;
+    let aiRawResponse = '';
 
     try {
-      signal = await generateTradingSignal(marketReport);
-      aiRawResponse = JSON.stringify(signal, null, 2);
+      const result = await generateTradingSignal(marketReport);
+      signal = result.signal;
+      aiRawResponse = result.rawResponse;
 
-      // 保存 AI 返回的 JSON
-      await saveToFolder(folderPath, '2-ai-signal.json', aiRawResponse);
+      // 保存原始 AI 响应
+      await saveToFolder(folderPath, '2-ai-raw-response.txt', aiRawResponse);
+
+      // 保存解析后的 JSON
+      await saveToFolder(folderPath, '2-ai-signal.json', JSON.stringify(signal, null, 2));
 
       console.log('\n✅ AI 交易信号生成成功');
       console.log(`操作: ${signal.signal.action}`);
@@ -289,14 +326,45 @@ async function runTradingCycle(): Promise<void> {
       return;
     }
 
-    // 4. 执行交易信号
+    // 4. 执行交易信号（如果不是模拟运行）
     if (signal) {
-      const executionResult = await executeTradingSignal(signal);
+      if (dryRun) {
+        // 模拟运行：只显示分析结果，不执行交易
+        const analysisResult = [
+          '='.repeat(80),
+          '📊 交易信号分析 [仅分析模式 - 不执行交易]',
+          '='.repeat(80),
+          '',
+          '市场分析:',
+          `  趋势: ${signal.analysis.marketTrend}`,
+          `  持仓: ${signal.analysis.positionStatus}`,
+          `  风险: ${signal.analysis.riskAssessment}`,
+          '',
+          '交易信号:',
+          `  操作: ${signal.signal.action}`,
+          `  置信度: ${signal.signal.confidence}`,
+          `  理由: ${signal.signal.reasoning}`,
+          '',
+          `风险提示: ${signal.riskWarning}`,
+          '',
+          '='.repeat(80),
+          '💤 仅分析模式 - 不执行任何订单',
+          '='.repeat(80),
+        ].join('\n');
 
-      // 保存执行结果
-      await saveToFolder(folderPath, '3-execution-result.txt', executionResult);
+        // 保存分析结果
+        await saveToFolder(folderPath, '3-execution-result.txt', analysisResult);
 
-      console.log('\n' + executionResult);
+        console.log('\n' + analysisResult);
+      } else {
+        // 正常运行：执行交易
+        const executionResult = await executeTradingSignal(signal);
+
+        // 保存执行结果
+        await saveToFolder(folderPath, '3-execution-result.txt', executionResult);
+
+        console.log('\n' + executionResult);
+      }
     }
 
     console.log('\n✅ 交易周期完成');
@@ -316,14 +384,22 @@ async function main() {
   console.log('AI 模型: deepseek/deepseek-r1');
   console.log('='.repeat(80));
 
+  // 启动时立即执行一次分析（仅分析，不执行交易）
+  console.log('\n📋 启动时执行初始分析（仅分析模式）...\n');
+  await runTradingCycle(true);
+
+  console.log('\n' + '='.repeat(80));
+  console.log('🔄 进入定时交易循环...');
+  console.log('='.repeat(80));
+
   // 无限循环
   while (true) {
     try {
       // 等待到下一个 5 分钟 K 线结束时刻
       await waitFor5MinuteKlineClose();
 
-      // 执行交易周期
-      await runTradingCycle();
+      // 执行交易周期（正常模式，会执行交易）
+      await runTradingCycle(false);
 
       // 等待 10 秒，避免在同一分钟内重复执行
       await new Promise(resolve => setTimeout(resolve, 10000));
