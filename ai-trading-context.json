@@ -1,8 +1,8 @@
 {
   "metadata": {
     "symbol": "cmt_btcusdt",
-    "timestamp": "2025-11-27T03:37:50.944Z",
-    "dataFetchDuration": "0.45s"
+    "timestamp": "2025-11-27T03:41:40.559Z",
+    "dataFetchDuration": "0.42s"
   },
   "tradingHistory": {
     "symbol": "cmt_btcusdt",
@@ -183,19 +183,27 @@
   },
   "marketData": {
     "symbol": "cmt_btcusdt",
-    "timestamp": "2025-11-27T03:37:50.861Z",
-    "currentPrice": "91093.0",
+    "timestamp": "2025-11-27T03:41:40.507Z",
+    "currentPrice": "91187.6",
     "klines": {
       "5m": {
         "symbol": "cmt_btcusdt",
         "granularity": "5m",
         "count": 51,
-        "latestPrice": "91093.1",
-        "priceChange24h": "-193.60",
-        "priceChangePercent24h": "-0.21",
+        "latestPrice": "91187.8",
+        "priceChange24h": "102.50",
+        "priceChangePercent24h": "0.11",
         "high24h": "91847.50",
         "low24h": "90025.40",
         "candles": [
+          {
+            "time": "2025-11-27T03:35:00.000Z",
+            "open": "91085.3",
+            "high": "91209.0",
+            "low": "91069.2",
+            "close": "91159.0",
+            "volume": "262.8602"
+          },
           {
             "time": "2025-11-27T03:30:00.000Z",
             "open": "91286.7",
@@ -589,20 +597,12 @@
             "volume": "69.8734"
           },
           {
-            "time": "2025-11-26T23:25:00.000Z",
-            "open": "90441.5",
-            "high": "90441.5",
-            "low": "90285.2",
-            "close": "90287.5",
-            "volume": "91.3379"
-          },
-          {
-            "time": "2025-11-27T03:35:00.000Z",
-            "open": "91085.3",
-            "high": "91168.7",
-            "low": "91069.2",
-            "close": "91093.1",
-            "volume": "77.8789"
+            "time": "2025-11-27T03:40:00.000Z",
+            "open": "91159.0",
+            "high": "91199.7",
+            "low": "91138.0",
+            "close": "91187.8",
+            "volume": "59.2864"
           }
         ]
       },
@@ -610,9 +610,9 @@
         "symbol": "cmt_btcusdt",
         "granularity": "1h",
         "count": 51,
-        "latestPrice": "91093.1",
-        "priceChange24h": "-1.60",
-        "priceChangePercent24h": "-0.00",
+        "latestPrice": "91187.8",
+        "priceChange24h": "93.10",
+        "priceChangePercent24h": "0.10",
         "high24h": "91847.50",
         "low24h": "86061.20",
         "candles": [
@@ -1021,234 +1021,234 @@
             "open": "91335.1",
             "high": "91556.9",
             "low": "91069.2",
-            "close": "91093.1",
-            "volume": "2120.2551"
+            "close": "91187.8",
+            "volume": "2364.5228"
           }
         ]
       }
     },
     "orderBook": {
       "symbol": "cmt_btcusdt",
-      "timestamp": "2025-11-27T03:37:50.865Z",
-      "bestBid": "91093.0",
-      "bestAsk": "91093.1",
+      "timestamp": "2025-11-27T03:41:40.513Z",
+      "bestBid": "91187.6",
+      "bestAsk": "91187.7",
       "spread": "0.10",
       "spreadPercent": "0.0001",
       "bidDepth": [
         {
-          "price": "91093.0",
-          "amount": "2.6609",
-          "total": "2.6609"
+          "price": "91187.6",
+          "amount": "5.1829",
+          "total": "5.1829"
         },
         {
-          "price": "91092.9",
-          "amount": "1.7376",
-          "total": "4.3985"
+          "price": "91187.4",
+          "amount": "2.5125",
+          "total": "7.6954"
         },
         {
-          "price": "91092.8",
-          "amount": "1.4104",
-          "total": "5.8089"
+          "price": "91187.3",
+          "amount": "2.6905",
+          "total": "10.3859"
         },
         {
-          "price": "91092.7",
-          "amount": "1.3194",
-          "total": "7.1283"
+          "price": "91187.2",
+          "amount": "2.1100",
+          "total": "12.4959"
         },
         {
-          "price": "91092.6",
-          "amount": "1.4240",
-          "total": "8.5523"
+          "price": "91187.1",
+          "amount": "2.2981",
+          "total": "14.7940"
         },
         {
-          "price": "91092.5",
-          "amount": "2.0561",
-          "total": "10.6084"
+          "price": "91186.9",
+          "amount": "2.1425",
+          "total": "16.9365"
         },
         {
-          "price": "91092.4",
-          "amount": "1.4690",
-          "total": "12.0774"
+          "price": "91186.7",
+          "amount": "2.4782",
+          "total": "19.4147"
         },
         {
-          "price": "91092.3",
-          "amount": "1.3774",
-          "total": "13.4548"
+          "price": "91186.6",
+          "amount": "2.8850",
+          "total": "22.2997"
         },
         {
-          "price": "91092.2",
-          "amount": "1.7983",
-          "total": "15.2531"
+          "price": "91186.5",
+          "amount": "1.7159",
+          "total": "24.0156"
         },
         {
-          "price": "91092.1",
-          "amount": "1.5806",
-          "total": "16.8337"
+          "price": "91186.4",
+          "amount": "1.9638",
+          "total": "25.9794"
         },
         {
-          "price": "91092.0",
-          "amount": "2.5030",
-          "total": "19.3367"
+          "price": "91186.3",
+          "amount": "1.8520",
+          "total": "27.8314"
         },
         {
-          "price": "91091.9",
-          "amount": "1.7964",
-          "total": "21.1331"
+          "price": "91186.2",
+          "amount": "1.3847",
+          "total": "29.2161"
         },
         {
-          "price": "91091.8",
-          "amount": "2.3624",
-          "total": "23.4955"
+          "price": "91186.1",
+          "amount": "2.6053",
+          "total": "31.8214"
         },
         {
-          "price": "91091.7",
-          "amount": "1.6616",
-          "total": "25.1571"
+          "price": "91186.0",
+          "amount": "2.0518",
+          "total": "33.8732"
         },
         {
-          "price": "91091.6",
-          "amount": "1.5852",
-          "total": "26.7423"
+          "price": "91185.9",
+          "amount": "1.4149",
+          "total": "35.2881"
         },
         {
-          "price": "91091.5",
-          "amount": "2.3376",
-          "total": "29.0799"
+          "price": "91185.8",
+          "amount": "1.6920",
+          "total": "36.9801"
         },
         {
-          "price": "91091.4",
-          "amount": "1.3006",
-          "total": "30.3805"
+          "price": "91185.7",
+          "amount": "1.8333",
+          "total": "38.8134"
         },
         {
-          "price": "91091.3",
-          "amount": "2.2928",
-          "total": "32.6733"
+          "price": "91185.6",
+          "amount": "31.5986",
+          "total": "70.4120"
         },
         {
-          "price": "91091.2",
-          "amount": "31.6318",
-          "total": "64.3051"
+          "price": "91185.4",
+          "amount": "100.9979",
+          "total": "171.4099"
         },
         {
-          "price": "91091.0",
-          "amount": "100.5317",
-          "total": "164.8368"
+          "price": "91185.3",
+          "amount": "100.3130",
+          "total": "271.7229"
         }
       ],
       "askDepth": [
         {
-          "price": "91093.1",
-          "amount": "2.4786",
-          "total": "2.4786"
+          "price": "91187.7",
+          "amount": "2.8345",
+          "total": "2.8345"
         },
         {
-          "price": "91093.3",
-          "amount": "2.7531",
-          "total": "5.2317"
+          "price": "91187.8",
+          "amount": "1.7547",
+          "total": "4.5892"
         },
         {
-          "price": "91093.4",
-          "amount": "2.7075",
-          "total": "7.9392"
+          "price": "91187.9",
+          "amount": "1.6250",
+          "total": "6.2142"
         },
         {
-          "price": "91093.5",
-          "amount": "2.8317",
-          "total": "10.7709"
+          "price": "91188.0",
+          "amount": "2.4884",
+          "total": "8.7026"
         },
         {
-          "price": "91093.9",
-          "amount": "1.3293",
-          "total": "12.1002"
+          "price": "91188.2",
+          "amount": "1.6858",
+          "total": "10.3884"
         },
         {
-          "price": "91094.0",
-          "amount": "1.4156",
-          "total": "13.5158"
+          "price": "91188.3",
+          "amount": "2.3773",
+          "total": "12.7657"
         },
         {
-          "price": "91094.1",
-          "amount": "1.9780",
-          "total": "15.4938"
+          "price": "91188.4",
+          "amount": "1.3345",
+          "total": "14.1002"
         },
         {
-          "price": "91094.2",
-          "amount": "2.3756",
-          "total": "17.8694"
+          "price": "91188.5",
+          "amount": "1.4966",
+          "total": "15.5968"
         },
         {
-          "price": "91094.3",
-          "amount": "1.9693",
-          "total": "19.8387"
+          "price": "91188.6",
+          "amount": "1.7880",
+          "total": "17.3848"
         },
         {
-          "price": "91094.4",
-          "amount": "1.6901",
-          "total": "21.5288"
+          "price": "91188.7",
+          "amount": "2.0766",
+          "total": "19.4614"
         },
         {
-          "price": "91094.5",
-          "amount": "2.2101",
-          "total": "23.7389"
+          "price": "91188.8",
+          "amount": "1.6695",
+          "total": "21.1309"
         },
         {
-          "price": "91094.6",
-          "amount": "1.4528",
-          "total": "25.1917"
+          "price": "91189.0",
+          "amount": "1.3607",
+          "total": "22.4916"
         },
         {
-          "price": "91094.7",
-          "amount": "2.1925",
-          "total": "27.3842"
+          "price": "91189.1",
+          "amount": "1.8182",
+          "total": "24.3098"
         },
         {
-          "price": "91094.8",
-          "amount": "2.3073",
-          "total": "29.6915"
+          "price": "91189.2",
+          "amount": "2.5495",
+          "total": "26.8593"
         },
         {
-          "price": "91094.9",
-          "amount": "1.7604",
-          "total": "31.4519"
+          "price": "91189.3",
+          "amount": "1.7834",
+          "total": "28.6427"
         },
         {
-          "price": "91095.0",
-          "amount": "1.3431",
-          "total": "32.7950"
+          "price": "91189.4",
+          "amount": "1.5895",
+          "total": "30.2322"
         },
         {
-          "price": "91095.1",
-          "amount": "2.1981",
-          "total": "34.9931"
+          "price": "91189.5",
+          "amount": "2.0008",
+          "total": "32.2330"
         },
         {
-          "price": "91095.2",
-          "amount": "2.3517",
-          "total": "37.3448"
+          "price": "91189.6",
+          "amount": "31.3720",
+          "total": "63.6050"
         },
         {
-          "price": "91095.3",
-          "amount": "31.2737",
-          "total": "68.6185"
+          "price": "91189.7",
+          "amount": "100.9566",
+          "total": "164.5616"
         },
         {
-          "price": "91095.5",
-          "amount": "100.4961",
-          "total": "169.1146"
+          "price": "91192.1",
+          "amount": "100.1116",
+          "total": "264.6732"
         }
       ],
-      "totalBidVolume": "164.8368",
-      "totalAskVolume": "169.1146",
-      "bidAskRatio": "0.9747"
+      "totalBidVolume": "271.7229",
+      "totalAskVolume": "264.6732",
+      "bidAskRatio": "1.0266"
     }
   },
   "accountRisk": {
     "symbol": "cmt_btcusdt",
-    "timestamp": "2025-11-27T03:37:50.944Z",
+    "timestamp": "2025-11-27T03:41:40.551Z",
     "balance": {
-      "total": "950.12",
-      "available": "950.12",
+      "total": "950.08",
+      "available": "950.08",
       "frozen": "0.00"
     },
     "leverage": {
@@ -1257,7 +1257,7 @@
     },
     "margin": {
       "used": "0.00",
-      "available": "950.12",
+      "available": "950.08",
       "ratio": "0.00"
     },
     "risk": {
@@ -1280,16 +1280,16 @@
         "size": "0.0050",
         "entryPrice": "91226.50",
         "leverage": "20.00",
-        "unrealizedPnl": "-0.65600",
-        "pnlPercent": "-0.1438"
+        "unrealizedPnl": "-0.19000",
+        "pnlPercent": "-0.0417"
       },
       {
         "side": "SHORT",
         "size": "0.0050",
         "entryPrice": "90669.90",
         "leverage": "20.00",
-        "unrealizedPnl": "-2.12700",
-        "pnlPercent": "-0.4692"
+        "unrealizedPnl": "-2.59300",
+        "pnlPercent": "-0.5720"
       }
     ],
     "totalPnl": "-2.78300",

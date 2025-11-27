@@ -2706,14 +2706,11 @@ export class WeexApiClient {
     // 构建格式化的文本报告
     const lines: string[] = [];
 
-    lines.push('='.repeat(80));
-    lines.push(`AI 交易上下文报告 - ${context.metadata.symbol}`);
-    lines.push('='.repeat(80));
+    lines.push(`交易对: ${context.metadata.symbol}`);
     lines.push('');
 
     // 1. 交易历史
-    lines.push('📊 一、最近交易记录');
-    lines.push('-'.repeat(80));
+    lines.push('最近交易记录:');
 
     // 显示最近的交易记录（只显示前10条）
     const tradesToShow = context.tradingHistory.recentTrades.slice(0, 10);
@@ -2730,8 +2727,7 @@ export class WeexApiClient {
     lines.push('');
 
     // 2. 市场数据
-    lines.push('📈 二、市场数据');
-    lines.push('-'.repeat(80));
+    lines.push('市场数据:');
     lines.push(`当前价格: ${context.marketData.currentPrice} USDT`);
     lines.push('');
 
@@ -2759,29 +2755,28 @@ export class WeexApiClient {
 
     // 订单簿数据
     lines.push('订单簿深度:');
-    lines.push(`  最优买价: ${context.marketData.orderBook.bestBid} USDT`);
-    lines.push(`  最优卖价: ${context.marketData.orderBook.bestAsk} USDT`);
-    lines.push(`  价差: ${context.marketData.orderBook.spread} USDT (${context.marketData.orderBook.spreadPercent}%)`);
-    lines.push(`  买卖比: ${context.marketData.orderBook.bidAskRatio}`);
+    lines.push(`最优买价: ${context.marketData.orderBook.bestBid} USDT`);
+    lines.push(`最优卖价: ${context.marketData.orderBook.bestAsk} USDT`);
+    lines.push(`价差: ${context.marketData.orderBook.spread} USDT (${context.marketData.orderBook.spreadPercent}%)`);
+    lines.push(`买卖比: ${context.marketData.orderBook.bidAskRatio}`);
     lines.push('');
 
     // 显示买盘深度
-    lines.push('  买盘深度:');
+    lines.push('买盘深度:');
     context.marketData.orderBook.bidDepth.forEach((bid: any, index: number) => {
-      lines.push(`    ${index + 1}. 价格:${bid.price} 数量:${bid.amount} 累计:${bid.total}`);
+      lines.push(`  ${index + 1}. 价格:${bid.price} 数量:${bid.amount} 累计:${bid.total}`);
     });
     lines.push('');
 
     // 显示卖盘深度
-    lines.push('  卖盘深度:');
+    lines.push('卖盘深度:');
     context.marketData.orderBook.askDepth.forEach((ask: any, index: number) => {
-      lines.push(`    ${index + 1}. 价格:${ask.price} 数量:${ask.amount} 累计:${ask.total}`);
+      lines.push(`  ${index + 1}. 价格:${ask.price} 数量:${ask.amount} 累计:${ask.total}`);
     });
     lines.push('');
 
     // 3. 账户风险
-    lines.push('⚠️  三、账户风险');
-    lines.push('-'.repeat(80));
+    lines.push('账户风险:');
     lines.push('余额:');
     lines.push(`  总余额: ${context.accountRisk.balance.total} USDT`);
     lines.push(`  可用: ${context.accountRisk.balance.available} USDT`);
@@ -2808,8 +2803,7 @@ export class WeexApiClient {
     lines.push('');
 
     // 4. 当前持仓
-    lines.push('💼 四、当前持仓');
-    lines.push('-'.repeat(80));
+    lines.push('当前持仓:');
 
     if (context.currentPosition.hasPosition && context.currentPosition.positions) {
       lines.push(`持仓状态: 有持仓 (${context.currentPosition.positions.length}个)`);
@@ -2832,11 +2826,6 @@ export class WeexApiClient {
     } else {
       lines.push('持仓状态: 无持仓');
     }
-    lines.push('');
-
-    lines.push('='.repeat(80));
-    lines.push('报告结束');
-    lines.push('='.repeat(80));
 
     const textReport = lines.join('\n');
 
