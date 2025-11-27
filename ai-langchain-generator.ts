@@ -4,7 +4,6 @@
  */
 
 import { StructuredOutputParser } from '@langchain/core/output_parsers';
-import { z } from 'zod';
 import { aiTradingSignalSchema, type AITradingSignal } from './ai-trading-schema';
 import { generateObject } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
@@ -37,23 +36,21 @@ export function getLangChainFormatInstructions(): string {
 
 /**
  * 构建增强的 Prompt（结合 LangChain 格式化指令）
- * @param marketReport - 原始市场报告
+ * @param marketReport - 原始市场报告（已包含 ai-trading-prompt.md）
  * @returns 增强后的 prompt
  */
 export async function buildEnhancedPrompt(marketReport: string): Promise<string> {
   // 获取 LangChain 的格式化指令
   const formatInstructions = getLangChainFormatInstructions();
-  
-  // 读取我们的交易策略 prompt
-  const tradingPrompt = await fs.readFile('ai-trading-prompt.md', 'utf-8');
-  
-  // 组合成完整的 prompt
+
+  // marketReport 已经包含了 ai-trading-prompt.md 的内容
+  // 我们只需要在末尾添加 LangChain 的格式化指令
   const enhancedPrompt = `
 ${marketReport}
 
 ---
 
-# 输出格式要求
+# LangChain 结构化输出格式要求
 
 ${formatInstructions}
 
@@ -61,13 +58,14 @@ ${formatInstructions}
 
 # 重要提示
 
-1. **严格遵守上述 JSON 格式**：你的输出必须是有效的 JSON，可以被 JSON.parse() 直接解析
-2. **不要包含 markdown 标记**：不要使用 \`\`\`json 或 \`\`\` 包裹你的输出
-3. **所有字段都必须填写**：不要遗漏任何必填字段
-4. **枚举值必须精确匹配**：action 必须是 HOLD/OPEN_LONG/OPEN_SHORT/CLOSE_LONG/CLOSE_SHORT/ADD_LONG/ADD_SHORT 之一
-5. **数字字段使用字符串**：size 和 price 字段必须是字符串格式，例如 "0.0050" 和 "91000.0"
+1. **严格遵守上述 JSON Schema**：你的输出必须完全符合上述 JSON Schema 定义
+2. **所有字段都必须填写**：不要遗漏任何 required 字段
+3. **枚举值必须精确匹配**：action、confidence、type、priceType 等枚举字段必须使用指定的值
+4. **数字字段使用字符串**：size 和 price 字段必须是字符串格式，例如 "0.0050" 和 "91000.0"
+5. **不要有尾随逗号**：确保 JSON 格式正确，没有多余的逗号
+6. **遵循字段描述**：每个字段的 description 说明了该字段的具体要求，请严格遵守
 
-请基于上述市场数据，进行深度分析并生成交易信号。
+请基于上述市场数据和交易策略，进行深度分析并生成符合 JSON Schema 的交易信号。
 `;
 
   return enhancedPrompt;

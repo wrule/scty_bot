@@ -1,6 +1,7 @@
 import * as dotenv from 'dotenv';
 import { WeexApiClient } from './weex';
-import { generateAITradingSignal, validateAITradingSignal, formatTradingSignal } from './ai-signal-generator';
+import { generateAITradingSignalWithLangChain } from './ai-langchain-generator';
+import { validateAITradingSignal, formatTradingSignal } from './ai-signal-generator';
 import type { AITradingSignal } from './ai-trading-schema';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -98,12 +99,12 @@ async function saveToFolder(folderPath: string, filename: string, content: strin
 }
 
 /**
- * 调用 AI 生成交易信号（使用 Vercel AI SDK）
+ * 调用 AI 生成交易信号（使用 LangChain + Vercel AI SDK）
  * @returns 返回 AI 交易信号对象
  */
 async function generateTradingSignal(marketReport: string): Promise<AITradingSignal> {
-  // 使用新的 AI 信号生成器（基于 Zod Schema + Vercel AI SDK）
-  const signal = await generateAITradingSignal(marketReport);
+  // 使用 LangChain StructuredOutputParser + Vercel AI SDK
+  const signal = await generateAITradingSignalWithLangChain(marketReport);
 
   // 验证信号
   if (!validateAITradingSignal(signal)) {
