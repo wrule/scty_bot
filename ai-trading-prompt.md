@@ -78,7 +78,7 @@
 
 ## 示例
 
-**示例1：双向开仓**
+**示例1：震荡市双向开仓**
 ```json
 {
   "analysis": {
@@ -102,18 +102,64 @@
 }
 ```
 
-**示例2：补仓**
+**示例2：趋势明确单边开仓**
 ```json
 {
   "analysis": {
-    "marketTrend": "BTC 跌至 94000，触及支撑位，5分钟K线企稳",
+    "marketTrend": "BTC 突破 96000 阻力，1小时连续3根阳线，订单簿卖压减弱",
+    "positionStatus": "无持仓",
+    "riskAssessment": "上涨趋势明确，单边做多风险可控"
+  },
+  "signal": {
+    "action": "OPEN_LONG",
+    "confidence": "HIGH",
+    "reasoning": "趋势明确向上，只开多仓顺势交易，不开空仓"
+  },
+  "execution": {
+    "hasOrder": true,
+    "orders": [
+      {"type": "1", "typeDescription": "1-开多", "size": "0.0150", "priceType": "MARKET", "price": "96200.0", "reasoning": "顺势开多，不逆势开空"}
+    ]
+  },
+  "riskWarning": "单边持仓，需设心理止损位 95500"
+}
+```
+
+**示例3：止盈平仓**
+```json
+{
+  "analysis": {
+    "marketTrend": "BTC 从 95000 涨至 98500，涨幅 3.7%",
+    "positionStatus": "多仓 0.015 BTC 成本 95000，盈利 3.7%（约 52 USDT）",
+    "riskAssessment": "已达止盈目标，应锁定利润"
+  },
+  "signal": {
+    "action": "CLOSE_LONG",
+    "confidence": "HIGH",
+    "reasoning": "盈利 3.7% 达到 3-5% 止盈区间，立即平仓锁定 52 USDT"
+  },
+  "execution": {
+    "hasOrder": true,
+    "orders": [
+      {"type": "3", "typeDescription": "3-平多", "size": "0.0150", "priceType": "MARKET", "price": "98500.0", "reasoning": "止盈平仓"}
+    ]
+  },
+  "riskWarning": "平仓后观察是否需要重新建仓"
+}
+```
+
+**示例4：补仓（有反转信号）**
+```json
+{
+  "analysis": {
+    "marketTrend": "BTC 跌至 94000，触及支撑位，5分钟K线出现锤子线企稳",
     "positionStatus": "多仓 0.015 BTC 成本 95500，亏损 2.6%",
-    "riskAssessment": "保证金使用 28%"
+    "riskAssessment": "保证金使用 28%，有补仓空间"
   },
   "signal": {
     "action": "ADD_LONG",
     "confidence": "HIGH",
-    "reasoning": "亏损达阈值，支撑位有反转信号，第一次补仓 0.015 BTC"
+    "reasoning": "亏损 2.6% 达阈值，支撑位 + K线企稳 = 反转信号，第一次补仓"
   },
   "execution": {
     "hasOrder": true,
