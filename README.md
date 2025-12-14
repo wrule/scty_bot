@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚀 SCTY Bot - 让 AI 为你炒币！
+# 🚀 FinChat Bot - 让 AI 为你炒币！
 
 <img src="https://img.shields.io/badge/🤖_AI_Powered-DeepSeek_R1-FF6B6B?style=for-the-badge" />
 <img src="https://img.shields.io/badge/⚡_Auto_Trading-5min_Cycle-4ECDC4?style=for-the-badge" />
@@ -16,7 +16,7 @@
 
 ---
 
-### 💡 为什么选择 SCTY Bot？
+### 💡 为什么选择 FinChat Bot？
 
 <table>
 <tr>
